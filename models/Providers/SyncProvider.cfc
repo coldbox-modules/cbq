@@ -14,7 +14,13 @@ component accessors="true" extends="AbstractQueueProvider" {
 		}
 
 		sleep( arguments.delay ); // TODO: do we want to respect delay in the sync driver?
-		marshalJob( deserializeJob( arguments.payload, createUUID(), arguments.attempts ) );
+		marshalJob(
+			deserializeJob(
+				arguments.payload,
+				createUUID(),
+				arguments.attempts
+			)
+		);
 		return this;
 	}
 
@@ -32,7 +38,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 
 			beforeJobRun( job );
 
-			variables.interceptorService.announce( "onCBQJobMarshalled", { "job": job } );
+			variables.interceptorService.announce( "onCBQJobMarshalled", { "job" : job } );
 
 			if ( variables.log.canDebug() ) {
 				variables.log.debug( "Running job ###job.getId()#", job.getMemento() );
@@ -47,14 +53,34 @@ component accessors="true" extends="AbstractQueueProvider" {
 			variables.interceptorService.announce(
 				"onCBQJobComplete",
 				{
-					"job": job,
-					"result": isNull( result ) ? javacast( "null", "" ) : result
+					"job" : job,
+					"result" : isNull( result ) ? javacast( "null", "" ) : result
 				}
 			);
 
 			afterJobRun( job );
 
-			return isNull( result ) ? javacast( "null", "" ) : result;
+			var chain = job.getChained();
+			if ( chain.isEmpty() ) {
+				return;
+			}
+
+			var nextJobConfig = chain[ 1 ];
+			var nextJob = variables.wirebox.getInstance( nextJobConfig.mapping );
+			param nextJobConfig.properties = {};
+
+			nextJob.setBackoff( isNull( nextJobConfig.backoff ) ? javacast( "null", "" ) : nextJobConfig.backoff );
+			nextJob.setTimeout( isNull( nextJobConfig.timeout ) ? javacast( "null", "" ) : nextJobConfig.timeout );
+			nextJob.setProperties( nextJobConfig.properties );
+			nextJob.setMaxAttempts(
+				isNull( nextJobConfig.maxAttempts ) ? javacast( "null", "" ) : nextJobConfig.maxAttempts
+			);
+
+			if ( chain.len() >= 2 ) {
+				nextJob.setChained( nextJobConfig.chained );
+			}
+
+			nextJob.dispatch();
 		} catch ( any e ) {
 			// log failed job
 			if ( "java.util.concurrent.CompletionException" == e.getClass().getName() ) {
@@ -65,13 +91,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 				log.error( "Exception when running job #job.getId()#:", serializeJSON( e ) );
 			}
 
-			variables.interceptorService.announce(
-				"onCBQJobException",
-				{
-					"job": job,
-					"exception": e
-				}
-			);
+			variables.interceptorService.announce( "onCBQJobException", { "job" : job, "exception" : e } );
 
 			if ( job.getCurrentAttempt() < getMaxAttemptsForJob( job ) ) {
 				variables.log.debug( "Releasing job ###job.getId()#" );
@@ -80,15 +100,9 @@ component accessors="true" extends="AbstractQueueProvider" {
 			} else {
 				variables.log.debug( "Maximum attempts reached. Deleting job ###job.getId()#" );
 
-				variables.interceptorService.announce(
-					"onCBQJobFailed",
-					{
-						"job": job,
-						"exception": e
-					}
-				);
+				variables.interceptorService.announce( "onCBQJobFailed", { "job" : job, "exception" : e } );
 
-				afterJobFailed( job );
+				afterJobFailed( job.getId(), job );
 
 				variables.log.debug( "Deleted job ###job.getId()# after maximum failed attempts." );
 			}

@@ -3,10 +3,14 @@ component accessors="true" extends="AbstractQueueProvider" {
 	property name="async" inject="coldbox:asyncManager";
 	property name="executor";
 
-    variables.currentExecutorCount = 0;
+	variables.currentExecutorCount = 0;
 
 	function onDIComplete() {
-		variables.executor = variables.async.newExecutor( "cbq:ColdBoxAsyncProvider", "fixed", 1 );
+		variables.executor = variables.async.newExecutor(
+			"cbq:ColdBoxAsyncProvider",
+			"fixed",
+			1
+		);
 	}
 
 	public any function push(
@@ -30,7 +34,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 				}
 
 				if ( log.canError() ) {
-					log.error( "Exception when running job #job.getId()#:", e );
+					log.error( "Exception when running job #job.getId()#:", serializeJSON( e ) );
 				}
 			} );
 	}

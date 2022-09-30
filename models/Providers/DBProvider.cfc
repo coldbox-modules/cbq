@@ -173,8 +173,8 @@ component accessors="true" extends="AbstractQueueProvider" {
 		deleteJobById( arguments.job.getId() );
 	}
 
-	private void function afterJobFailed( required AbstractJob job ) {
-		deleteJobById( arguments.job.getId() );
+	private void function afterJobFailed( required any id, AbstractJob job ) {
+		deleteJobById( arguments.id );
 	}
 
 	private void function deleteJobById( required numeric id ) {
@@ -211,7 +211,6 @@ component accessors="true" extends="AbstractQueueProvider" {
 
 			super.releaseJob( arguments.job );
 		}
-
 	}
 
 	public QueryBuilder function newQuery() provider="QueryBuilder@qb" {

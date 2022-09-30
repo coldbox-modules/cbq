@@ -27,17 +27,18 @@ component accessors="true" {
 		);
 	}
 
-	public any function runSerializedJob( required string payload ) {
-		var job = deserializeJob( arguments.payload );
-		return job.handle();
-	}
-
 	public any function deserializeJob(
 		required string payload,
 		required any jobId,
 		required numeric currentAttempt
 	) {
 		var config = deserializeJSON( arguments.payload );
+
+		if ( !variables.wirebox.containsInstance( config.mapping ) ) {
+			afterJobFailed( arguments.jobId );
+			throw( "Failed to find the [#config.mapping#] instance" );
+		}
+
 		var instance = variables.wirebox.getInstance( config.mapping );
 		param config.properties = {};
 
@@ -47,19 +48,20 @@ component accessors="true" {
 		instance.setProperties( config.properties );
 		instance.setMaxAttempts( isNull( config.maxAttempts ) ? javacast( "null", "" ) : config.maxAttempts );
 		instance.setCurrentAttempt( arguments.currentAttempt );
+		instance.setChained( config.chained );
 
 		return instance;
 	}
 
 	/**
-     * Get the "available at" UNIX timestamp.
-     *
-     * @delay  The delay, in seconds, to add to the current timestamp
-     * @return int
-     */
-    public numeric function getCurrentUnixTimestamp( numeric delay = 0 ) {
-        return variables.javaInstant.now().getEpochSecond() + arguments.delay;
-    }
+	 * Get the "available at" UNIX timestamp.
+	 *
+	 * @delay  The delay, in seconds, to add to the current timestamp
+	 * @return int
+	 */
+	public numeric function getCurrentUnixTimestamp( numeric delay = 0 ) {
+		return variables.javaInstant.now().getEpochSecond() + arguments.delay;
+	}
 
 	private void function marshalJob( required AbstractJob job ) {
 		variables.async
@@ -70,7 +72,7 @@ component accessors="true" {
 
 				beforeJobRun( job );
 
-				variables.interceptorService.announce( "onCBQJobMarshalled", { "job": job } );
+				variables.interceptorService.announce( "onCBQJobMarshalled", { "job" : job } );
 
 				if ( variables.log.canDebug() ) {
 					variables.log.debug( "Running job ###job.getId()#", job.getMemento() );
@@ -87,12 +89,14 @@ component accessors="true" {
 				variables.interceptorService.announce(
 					"onCBQJobComplete",
 					{
-						"job": job,
-						"result": isNull( result ) ? javacast( "null", "" ) : result
+						"job" : job,
+						"result" : isNull( result ) ? javacast( "null", "" ) : result
 					}
 				);
 
 				afterJobRun( job );
+
+				dispatchNextJobInChain( job );
 			} )
 			.onException( function( e ) {
 				// log failed job
@@ -101,16 +105,10 @@ component accessors="true" {
 				}
 
 				if ( log.canError() ) {
-					log.error( "Exception when running job #job.getId()#:", e );
+					log.error( "Exception when running job #job.getId()#:", serializeJSON( e ) );
 				}
 
-				variables.interceptorService.announce(
-					"onCBQJobException",
-					{
-						"job": job,
-						"exception": e
-					}
-				);
+				variables.interceptorService.announce( "onCBQJobException", { "job" : job, "exception" : e } );
 
 				if ( job.getCurrentAttempt() < getMaxAttemptsForJob( job ) ) {
 					variables.log.debug( "Releasing job ###job.getId()#" );
@@ -119,26 +117,23 @@ component accessors="true" {
 				} else {
 					variables.log.debug( "Maximum attempts reached. Deleting job ###job.getId()#" );
 
-					variables.interceptorService.announce(
-						"onCBQJobFailed",
-						{
-							"job": job,
-							"exception": e
-						}
-					);
+					variables.interceptorService.announce( "onCBQJobFailed", { "job" : job, "exception" : e } );
 
-					afterJobFailed( job );
+					afterJobFailed( job.getId(), job );
 
 					variables.log.debug( "Deleted job ###job.getId()# after maximum failed attempts." );
 				}
 			} );
 	}
 
-	private void function beforeJobRun( required AbstractJob job ) {}
+	private void function beforeJobRun( required AbstractJob job ) {
+	}
 
-	private void function afterJobRun( required AbstractJob job ) {}
+	private void function afterJobRun( required AbstractJob job ) {
+	}
 
-	private void function afterJobFailed( required AbstractJob job ) {}
+	private void function afterJobFailed( required any id, AbstractJob job ) {
+	}
 
 	private void function releaseJob( required AbstractJob job ) {
 		push(
@@ -195,6 +190,30 @@ component accessors="true" {
 		}
 
 		return 1;
+	}
+
+	private void function dispatchNextJobInChain( required AbstractJob job ) {
+		var chain = arguments.job.getChained();
+		if ( chain.isEmpty() ) {
+			return;
+		}
+
+		var nextJobConfig = chain[ 1 ];
+		var nextJob = variables.wirebox.getInstance( nextJobConfig.mapping );
+		param nextJobConfig.properties = {};
+
+		nextJob.setBackoff( isNull( nextJobConfig.backoff ) ? javacast( "null", "" ) : nextJobConfig.backoff );
+		nextJob.setTimeout( isNull( nextJobConfig.timeout ) ? javacast( "null", "" ) : nextJobConfig.timeout );
+		nextJob.setProperties( nextJobConfig.properties );
+		nextJob.setMaxAttempts(
+			isNull( nextJobConfig.maxAttempts ) ? javacast( "null", "" ) : nextJobConfig.maxAttempts
+		);
+
+		if ( chain.len() >= 2 ) {
+			nextJob.setChained( nextJobConfig.chained );
+		}
+
+		nextJob.dispatch();
 	}
 
 }

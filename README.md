@@ -27,8 +27,7 @@ A queue provider **must** extend the `AbstractQueueProvider` and implement the r
 Additionally, the Queue Provider can use the following hooks to do additional processing or cleanup:
 
 + `private void function beforeJobRun( required AbstractJob job )`
-+ `private void function afterJobRun( required AbstractJob job )`
-+ `private void function afterJobFailed( required AbstractJob job )`
++ `private void function afterJobFailed( required any id, AbstractJob job )`
 
 ### Job
 A job is a CFC that follows the `IDispatchableJob` interface (easily done by extending the `AbstractJob` component). It defines how to serialize the job using a memento pattern and deserialize the job from the queue.  It also holds the data needed to execute the job and a `handle` method that is called when working the job from the queue.  Job components exist in the context of your application so you have access to all the models, services, and helpers you have already written.  (Raw string messages can also be dispatched via cbq.  The message will need to be handled directly by your queue worker.)
@@ -173,3 +172,46 @@ getInstance( "GreetingJob" )
     .setDelay( 10 ) // delay processing this job for 10 seconds
     .dispatch();
 ```
+
+### CBQ Model
+
+A cbq model exists to make certain job- and dispatch-related actions easier
+to perform.  You can access it by injecting `cbq@cbq` or simply `@cbq`.
+Here are the methods available to you:
+
+#### `job`
+
+Creates a Job instance.
+
+| Name | Type | Required | Default | Description |
+| ----- | ------ | -------- | ------- | |
+| job | string or Job instance | true | | A job instance or mapping string to a Job instance. Additionally, any string may be provided here, even if it doesn't exist as a CFC.  If so, cbq will create a `NonExecutableJob` with the given mapping.  This can only be used if the instance dispatching the jobs will never work the jobs. |
+| properties | struct | false | `{}` | A struct of properties for the new Job. |
+| chain | Job[] | false | `[]` | An array of Job instances to chain after this one. |
+| queue | string | false | `null` | The queue to run this Job on. Overrides the Job queue and the default queue, if provided. |
+| backoff | numeric | false | `null` | The backoff amount between Job attempts. Overrides the Job backoff and the default backoff, if provided. |
+| timeout | numeric | false | `null` | The timeout amount before a Job run is considered timed out. Overrides the Job timeout and the default timeout, if provided. |
+| maxAttempts | numeric | false | `null` | The maxAttempts amount before a Job run is considered failed. Overrides the Job maxAttempts and the default maxAttempts, if provided. |
+
+#### `dispatch`
+
+Creates a Job instance and immediately dispatches it.
+
+| Name | Type | Required | Default | Description |
+| ----- | ------ | -------- | ------- | |
+| job | string or Job instance OR array of Job instances | true | | A job instance or mapping string to a Job instance. Additionally, any string may be provided here, even if it doesn't exist as a CFC.  If so, cbq will create a `NonExecutableJob` with the given mapping.  This can only be used if the instance dispatching the jobs will never work the jobs. If an array of Job instances are passed, this forwards it on to `chain` and dispatches the chain. |
+| properties | struct | false | `{}` | A struct of properties for the new job. |
+| chain | Job[] | false | `[]` | An array of Job instances to chain after this one. |
+| queue | string | false | `null` | The queue to run this Job on. Overrides the Job queue and the default queue, if provided. |
+| backoff | numeric | false | `null` | The backoff amount between Job attempts. Overrides the Job backoff and the default backoff, if provided. |
+| timeout | numeric | false | `null` | The timeout amount before a Job run is considered timed out. Overrides the Job timeout and the default timeout, if provided. |
+| maxAttempts | numeric | false | `null` | The maxAttempts amount before a Job run is considered failed. Overrides the Job maxAttempts and the default maxAttempts, if provided. |
+
+#### `chain`
+
+Creates a Job Chain and returns the first Job in the chain.
+To dispatch the chain, you must call `dispatch` on the returned Job.
+
+| Name | Type | Required | Default | Description |
+| ----- | ------ | -------- | ------- | |
+| chain | Job[] | false | `[]` | An array of Job instances to chain after this one. |

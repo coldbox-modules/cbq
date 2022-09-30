@@ -17,8 +17,8 @@ component singleton accessors="true" {
 		variables.interceptorService.announce(
 			"onCBQJobAdded",
 			{
-				"job": arguments.job,
-				"connection": connection
+				"job" : arguments.job,
+				"connection" : connection
 			}
 		);
 

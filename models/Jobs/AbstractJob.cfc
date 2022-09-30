@@ -13,11 +13,13 @@ component accessors="true" {
 	property name="timeout";
 	property name="maxAttempts";
 	property name="currentAttempt";
+	property name="chained" type="array";
 
 	property name="properties";
 
 	function init() {
 		variables.properties = {};
+		variables.chained = [];
 		return this;
 	}
 
@@ -52,6 +54,13 @@ component accessors="true" {
 		return this;
 	}
 
+	public AbstractJob function chain( required array jobs ) {
+		variables.chained = arguments.jobs.map( function( job ) {
+			return isObject( job ) ? job.getMemento() : job;
+		} );
+		return this;
+	}
+
 	public any function onMissingMethod( required string missingMethodName, struct missingMethodArguments = {} ) {
 		if ( variables.str.startsWith( arguments.missingMethodName, "get" ) ) {
 			var propertyName = variables.str.slice( arguments.missingMethodName, 4 );
@@ -77,7 +86,8 @@ component accessors="true" {
 			"backoff" : this.getBackoff(),
 			"timeout" : this.getTimeout(),
 			"maxAttempts" : this.getMaxAttempts(),
-			"currentAttempt" : this.getCurrentAttempt()
+			"currentAttempt" : this.getCurrentAttempt(),
+			"chained" : this.getChained()
 		};
 	}
 
