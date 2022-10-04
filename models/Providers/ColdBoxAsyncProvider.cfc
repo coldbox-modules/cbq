@@ -1,6 +1,5 @@
 component accessors="true" extends="AbstractQueueProvider" {
 
-	property name="async" inject="coldbox:asyncManager";
 	property name="executor";
 
 	variables.currentExecutorCount = 0;
@@ -21,7 +20,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 	) {
 		variables.async
 			.newFuture( function() {
-				sleep( delay );
+				sleep( delay * 1000 );
 				return true;
 			}, variables.executor )
 			.then( function() {

@@ -44,7 +44,11 @@ component accessors="true" extends="AbstractQueueProvider" {
 				variables.log.debug( "Running job ###job.getId()#", job.getMemento() );
 			}
 
-			var result = job.handle();
+			var result = variables.async
+				.newFuture( function() {
+					return job.handle();
+				} )
+				.get( getTimeoutForJob( job ), "seconds" );
 
 			if ( variables.log.canDebug() ) {
 				variables.log.debug( "Job ###job.getId()# completed successfully." );
@@ -105,6 +109,8 @@ component accessors="true" extends="AbstractQueueProvider" {
 				afterJobFailed( job.getId(), job );
 
 				variables.log.debug( "Deleted job ###job.getId()# after maximum failed attempts." );
+
+				throw( e );
 			}
 		}
 	}

@@ -2,6 +2,7 @@ component accessors="true" {
 
 	property name="interceptorService" inject="box:interceptorService";
 	property name="javaInstant" inject="java:java.time.Instant";
+	property name="async" inject="coldbox:asyncManager";
 	property name="log" inject="logbox:logger:{this}";
 	property name="wirebox" inject="wirebox";
 

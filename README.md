@@ -219,8 +219,8 @@ Creates a Job instance.
 | properties | struct | false | `{}` | A struct of properties for the new Job. |
 | chain | Job[] | false | `[]` | An array of Job instances to chain after this one. |
 | queue | string | false | `null` | The queue to run this Job on. Overrides the Job queue and the default queue, if provided. |
-| backoff | numeric | false | `null` | The backoff amount between Job attempts. Overrides the Job backoff and the default backoff, if provided. |
-| timeout | numeric | false | `null` | The timeout amount before a Job run is considered timed out. Overrides the Job timeout and the default timeout, if provided. |
+| backoff | numeric | false | `null` | The backoff amount in seconds between Job attempts. Overrides the Job backoff and the default backoff, if provided. |
+| timeout | numeric | false | `null` | The timeout amount in seconds before a Job run is considered timed out. Overrides the Job timeout and the default timeout, if provided. |
 | maxAttempts | numeric | false | `null` | The maxAttempts amount before a Job run is considered failed. Overrides the Job maxAttempts and the default maxAttempts, if provided. |
 
 #### `dispatch`
@@ -233,8 +233,8 @@ Creates a Job instance and immediately dispatches it.
 | properties | struct | false | `{}` | A struct of properties for the new job. |
 | chain | Job[] | false | `[]` | An array of Job instances to chain after this one. |
 | queue | string | false | `null` | The queue to run this Job on. Overrides the Job queue and the default queue, if provided. |
-| backoff | numeric | false | `null` | The backoff amount between Job attempts. Overrides the Job backoff and the default backoff, if provided. |
-| timeout | numeric | false | `null` | The timeout amount before a Job run is considered timed out. Overrides the Job timeout and the default timeout, if provided. |
+| backoff | numeric | false | `null` | The backoff in seconds amount between Job attempts. Overrides the Job backoff and the default backoff, if provided. |
+| timeout | numeric | false | `null` | The timeout amount in seconds before a Job run is considered timed out. Overrides the Job timeout and the default timeout, if provided. |
 | maxAttempts | numeric | false | `null` | The maxAttempts amount before a Job run is considered failed. Overrides the Job maxAttempts and the default maxAttempts, if provided. |
 
 #### `chain`
