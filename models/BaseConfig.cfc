@@ -42,6 +42,17 @@ component singleton accessors="true" {
 		return connectionDefinition;
 	}
 
+	public QueueConnectionDefinition function withConnection( required string name ) {
+		if ( !variables.connectionDefinitions.keyExists( arguments.name ) ) {
+			throw(
+				type = "cbq.MissingQueueConnection",
+				message = "No queue connection definition found for [#arguments.name#]. Did you mean to create a `newConnection`?"
+			);
+		}
+
+		return variables.connectionDefinitions[ arguments.name ];
+	}
+
 	public any function registerConnections() {
 		for ( var name in variables.connectionDefinitions ) {
 			if ( structKeyExists( variables.connections, name ) ) {
@@ -119,6 +130,17 @@ component singleton accessors="true" {
 		workerPoolDefinition.setQueue( arguments.queue );
 		variables.workerPoolDefinitions[ arguments.connectionName ] = workerPoolDefinition;
 		return workerPoolDefinition;
+	}
+
+	public WorkerPoolDefinition function withWorkerPool( required string name ) {
+		if ( !variables.workerPoolDefinitions.keyExists( arguments.name ) ) {
+			throw(
+				type = "cbq.MissingWorkerPool",
+				message = "No worker pool definition found for [#arguments.name#]. Did you mean to create a `newWorkerPool`?"
+			);
+		}
+
+		return variables.workerPoolDefinitions[ arguments.name ];
 	}
 
 	public any function registerWorkerPools() {

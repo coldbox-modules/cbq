@@ -20,10 +20,11 @@ component {
 			.setVirtualInheritance( "BaseConfig@cbq" )
 			.setThreadSafe( true )
 			.setScope( variables.wirebox.getBinder().SCOPES.SINGLETON );
+
 		var config = variables.wirebox.getInstance( configName );
 
 		config.configure();
-		config.registerConnections();
+		config.work();
 
 		// Get ColdBox environment settings and if same convention of 'environment'() found, execute it.
 		var environment = variables.controller.getSetting( "ENVIRONMENT" );
@@ -31,8 +32,8 @@ component {
 			invoke( config, environment );
 		}
 
+		config.registerConnections();
 		if ( settings.registerWorkers ) {
-			config.work();
 			config.registerWorkerPools();
 		}
 	}

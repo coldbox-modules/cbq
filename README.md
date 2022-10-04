@@ -126,6 +126,36 @@ newWorkerPool( connectionName )
     .maxAttempts( maxNumberOfAttempts );
 ```
 
+The config file follows ColdBox's environment overrides by calling a method matching the environment name if it is found.
+Inside that method you can use the `withConnection` and `withWorkerPool` methods to change the properties of connections
+defined in `configure` and worker pools defined in `work`:
+```cfc
+component {
+
+	function configure() {
+		newConnection( "default" )
+			.setProvider( "DBProvider@cbq" );
+	}
+
+	function work() {
+		newWorkerPool( "default" )
+			.setTimeout( 5 )
+			.setMaxAttempts( 5 )
+			.setQuantity( 3 );
+	}
+
+	function development() {
+		withConnection( "default" )
+			.setProvider( "SyncProvider@cbq" );
+
+		withWorkerPool( "default" )
+			.setMaxAttempts( 1 )
+			.setQuantity( 1 );
+	}
+
+}
+```
+
 ## Usage
 
 ### Job Components
