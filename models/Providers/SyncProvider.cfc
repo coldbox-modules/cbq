@@ -13,7 +13,6 @@ component accessors="true" extends="AbstractQueueProvider" {
 			return;
 		}
 
-		sleep( arguments.delay ); // TODO: do we want to respect delay in the sync driver?
 		marshalJob(
 			deserializeJob(
 				arguments.payload,
@@ -44,11 +43,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 				variables.log.debug( "Running job ###job.getId()#", job.getMemento() );
 			}
 
-			var result = variables.async
-				.newFuture( function() {
-					return job.handle();
-				} )
-				.get( getTimeoutForJob( job ), "seconds" );
+			var result = job.handle();
 
 			if ( variables.log.canDebug() ) {
 				variables.log.debug( "Job ###job.getId()# completed successfully." );
