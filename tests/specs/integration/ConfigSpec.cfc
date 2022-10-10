@@ -119,7 +119,7 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 					config.registerWorkerPools();
 				} );
 
-				it( "automatically registers a scheduled task to scale when a scale method is present", function() {
+				xit( "automatically registers a scheduled task to scale when a scale method is present", function() {
 					sleep( 3000 );
 					var config = getWireBox().getInstance( "Config@cbq" );
 					expect( config ).toHaveKey( "scaleCalled" );
