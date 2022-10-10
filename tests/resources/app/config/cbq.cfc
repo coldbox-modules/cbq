@@ -3,9 +3,7 @@ component accessors="true" {
 	function configure() {
 		this.scaleCalled = false;
 		newConnection( "default" ).setProvider( "ColdBoxAsyncProvider@cbq" ).setProperties( {} );
-	}
 
-	function work() {
 		newWorkerPool( "default" );
 	}
 

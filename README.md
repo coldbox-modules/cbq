@@ -91,10 +91,8 @@ component {
     function configure() {
         newConnection( "default" )
             .setProvider( "SyncProvider@cbq" );
-    }
 
-    function work() {
-        newWorkerPool( "default" );
+		newWorkerPool( "default" );
     }
 
 }
@@ -112,7 +110,7 @@ newConnection( connectionName )
     .markAsDefault( /* true / false */ );    .
 ```
 
-In the `work` function you define worker pools to work on `queue`s for a given `Connection` that you defined above.
+You can also define worker pools inside `configure` to work on `queue`s for a given `Connection` that you defined previously.
 
 New `Worker Pool`s are created using the `newWorkerPool` function. It is a builder pattern object.
 All of the setters are optional.
@@ -135,9 +133,7 @@ component {
 	function configure() {
 		newConnection( "default" )
 			.setProvider( "DBProvider@cbq" );
-	}
 
-	function work() {
 		newWorkerPool( "default" )
 			.setTimeout( 5 )
 			.setMaxAttempts( 5 )

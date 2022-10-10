@@ -24,7 +24,6 @@ component {
 		var config = variables.wirebox.getInstance( configName );
 
 		config.configure();
-		config.work();
 
 		// Get ColdBox environment settings and if same convention of 'environment'() found, execute it.
 		var environment = variables.controller.getSetting( "ENVIRONMENT" );

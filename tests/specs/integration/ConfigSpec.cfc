@@ -68,7 +68,7 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 					expect( defaultWorkerPool.getQueue() ).toBe( "default" );
 					expect( defaultWorkerPool.getBackoff() ).toBe( 0 );
 					expect( defaultWorkerPool.getTimeout() ).toBe( 60 );
-					expect( defaultWorkerPool.getAttempts() ).toBe( 1 );
+					expect( defaultWorkerPool.getMaxAttempts() ).toBe( 1 );
 				} );
 
 				it( "throws an exception when the associated connection does not exist", function() {
@@ -96,7 +96,7 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 					workerPoolDefinition.onQueue( "default" );
 					workerPoolDefinition.backoff( 5 );
 					workerPoolDefinition.timeout( 30 );
-					workerPoolDefinition.attempts( 3 );
+					workerPoolDefinition.maxAttempts( 3 );
 
 					var workerPool = workerPoolDefinition.register();
 
@@ -106,7 +106,7 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 					expect( workerPool.getQueue() ).toBe( "default" );
 					expect( workerPool.getBackoff() ).toBe( 5 );
 					expect( workerPool.getTimeout() ).toBe( 30 );
-					expect( workerPool.getAttempts() ).toBe( 3 );
+					expect( workerPool.getMaxAttempts() ).toBe( 3 );
 				} );
 			} );
 
@@ -116,7 +116,6 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 					config.reset();
 					config.configure();
 					config.registerConnections();
-					config.work();
 					config.registerWorkerPools();
 				} );
 
