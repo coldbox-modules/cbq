@@ -69,7 +69,7 @@ To install cbq, install it from ForgeBox:
 box install cbq
 ```
 
-You can configure cbq in you `moduleSettings` inside `config/ColdBox.cfc` as follows:
+You can configure cbq in your `moduleSettings` inside `config/ColdBox.cfc` as follows:
 ```cfc
 moduleSettings = {
     "cbq" : {
@@ -175,7 +175,7 @@ To dispatch a job to a queue to be worked, call the `dispatch` method on a `Job`
 Dispatching a job serializes it and sends it to the configured connection.  It will
 later be picked up by a worker and processed.
 
-```cfc
+```cfc  
 getInstance( "GreetingJob" ).dispatch();
 ```
 
