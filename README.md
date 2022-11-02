@@ -106,7 +106,7 @@ must be set. The other setters are optional.
 ```cfc
 newConnection( connectionName )
     .setProvider( providerMapping )
-    .onQueue( queueName = "default" )
+    .onQueue( name = "default" )
     .markAsDefault( /* true / false */ );    .
 ```
 
@@ -118,7 +118,7 @@ All of the setters are optional.
 ```cfc
 newWorkerPool( connectionName )
     .quantity( numberOfWorkers )
-    .onQueue( queueName = "default" )
+    .onQueue( name = "default" )
     .backoff( backoffTimeInSeconds )
     .timeout( timeoutTimeInSeconds )
     .maxAttempts( maxNumberOfAttempts );
@@ -210,7 +210,7 @@ Here are the methods available to you:
 Creates a Job instance.
 
 | Name | Type | Required | Default | Description |
-| ----- | ------ | -------- | ------- | |
+| ----- | ------ | -------- | ------- | ------- |
 | job | string or Job instance | true | | A job instance or mapping string to a Job instance. Additionally, any string may be provided here, even if it doesn't exist as a CFC.  If so, cbq will create a `NonExecutableJob` with the given mapping.  This can only be used if the instance dispatching the jobs will never work the jobs. |
 | properties | struct | false | `{}` | A struct of properties for the new Job. |
 | chain | Job[] | false | `[]` | An array of Job instances to chain after this one. |
@@ -224,7 +224,7 @@ Creates a Job instance.
 Creates a Job instance and immediately dispatches it.
 
 | Name | Type | Required | Default | Description |
-| ----- | ------ | -------- | ------- | |
+| ----- | ------ | -------- | ------- | ------- |
 | job | string or Job instance OR array of Job instances | true | | A job instance or mapping string to a Job instance. Additionally, any string may be provided here, even if it doesn't exist as a CFC.  If so, cbq will create a `NonExecutableJob` with the given mapping.  This can only be used if the instance dispatching the jobs will never work the jobs. If an array of Job instances are passed, this forwards it on to `chain` and dispatches the chain. |
 | properties | struct | false | `{}` | A struct of properties for the new job. |
 | chain | Job[] | false | `[]` | An array of Job instances to chain after this one. |
@@ -239,5 +239,5 @@ Creates a Job Chain and returns the first Job in the chain.
 To dispatch the chain, you must call `dispatch` on the returned Job.
 
 | Name | Type | Required | Default | Description |
-| ----- | ------ | -------- | ------- | |
+| ----- | ------ | -------- | ------- | ------- |
 | chain | Job[] | false | `[]` | An array of Job instances to chain after this one. |
