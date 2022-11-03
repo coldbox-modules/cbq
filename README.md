@@ -10,7 +10,7 @@ ColdBox 6+
 ## Definitions
 
 ### Queue Connection
-A queue connection defines how to connect to a backed service like Redis, RabbitMQ, or even a database.
+A queue connection defines how to connect to a backend service like Redis, RabbitMQ, or even a database.
 Any given queue connection can have multiple "queues" which are named stacks of queued jobs or messages to be delivered.
 
 ### Queue
