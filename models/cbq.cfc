@@ -47,7 +47,7 @@ component singleton accessors="true" {
 		return arguments.job;
 	}
 
-	function chain( required array jobs ) {
+	public AbstractJob function chain( required array jobs ) {
 		if ( arguments.jobs.isEmpty() ) {
 			throw( "At least one job must be passed to chain" );
 		}
@@ -59,6 +59,12 @@ component singleton accessors="true" {
 		}
 
 		return firstJob;
+	}
+
+	public PendingBatch function batch( required array jobs ) {
+		var batch = variables.wirebox.getInstance( "PendingBatch@cbq" );
+		batch.add( jobs );
+		return batch;
 	}
 
 }
