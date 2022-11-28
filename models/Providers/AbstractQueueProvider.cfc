@@ -51,6 +51,11 @@ component accessors="true" {
 		instance.setCurrentAttempt( arguments.currentAttempt );
 		instance.setChained( config.chained );
 
+		if ( config.keyExists( "batchId" ) ) {
+			instance.withBatchId( config.batchId );
+			instance.setIsLifecycleJob( config.isLifecycleJob );
+		}
+
 		return instance;
 	}
 
@@ -98,6 +103,7 @@ component accessors="true" {
 				afterJobRun( job );
 
 				dispatchNextJobInChain( job );
+				ensureSuccessfulBatchJobIsRecorded( job );
 			} )
 			.onException( function( e ) {
 				// log failed job
@@ -121,6 +127,7 @@ component accessors="true" {
 					variables.interceptorService.announce( "onCBQJobFailed", { "job" : job, "exception" : e } );
 
 					afterJobFailed( job.getId(), job );
+					ensureFailedBatchJobIsRecorded( job, e );
 
 					variables.log.debug( "Deleted job ###job.getId()# after maximum failed attempts." );
 				}
@@ -215,6 +222,30 @@ component accessors="true" {
 		}
 
 		nextJob.dispatch();
+	}
+
+	private void function ensureSuccessfulBatchJobIsRecorded( required AbstractJob job ) {
+		if ( !structKeyExists( arguments.job, "getBatch" ) ) {
+			return;
+		}
+
+		if ( arguments.job.getIsLifecycleJob() ) {
+			return;
+		}
+
+		arguments.job.getBatch().recordSuccessfulJob( arguments.job.getId() );
+	}
+
+	private void function ensureFailedBatchJobIsRecorded( required AbstractJob job, required any error ) {
+		if ( !structKeyExists( arguments.job, "getBatch" ) ) {
+			return;
+		}
+
+		if ( arguments.job.getIsLifecycleJob() ) {
+			return;
+		}
+
+		arguments.job.getBatch().recordFailedJob( arguments.job.getId(), arguments.error );
 	}
 
 }
