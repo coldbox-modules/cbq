@@ -136,7 +136,6 @@ component accessors="true" extends="AbstractQueueProvider" {
 				} );
 			} )
 			.orderByAsc( "id" )
-			.limit( variables.currentExecutorCount )
 			.get( options = variables.defaultQueryOptions );
 
 		for ( var job in jobRecords ) {
