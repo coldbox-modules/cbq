@@ -44,7 +44,7 @@ component accessors="true" {
 		param config.properties = {};
 
 		instance.setId( arguments.jobId );
-		instance.setQueue( isNull( config.backoff ) ? javacast( "null", "" ) : config.backoff );
+		instance.setQueue( isNull( config.queue ) ? javacast( "null", "" ) : config.queue );
 		instance.setConnection( isNull( config.connection ) ? javacast( "null", "" ) : config.connection );
 		instance.setBackoff( isNull( config.backoff ) ? javacast( "null", "" ) : config.backoff );
 		instance.setTimeout( isNull( config.timeout ) ? javacast( "null", "" ) : config.timeout );
@@ -212,6 +212,8 @@ component accessors="true" {
 		var nextJob = variables.wirebox.getInstance( nextJobConfig.mapping );
 		param nextJobConfig.properties = {};
 
+		nextJob.setQueue( isNull( nextJobConfig.queue ) ? javacast( "null", "" ) : nextJobConfig.queue );
+		nextJob.setConnection( isNull( nextJobConfig.connection ) ? javacast( "null", "" ) : nextJobConfig.connection );
 		nextJob.setBackoff( isNull( nextJobConfig.backoff ) ? javacast( "null", "" ) : nextJobConfig.backoff );
 		nextJob.setTimeout( isNull( nextJobConfig.timeout ) ? javacast( "null", "" ) : nextJobConfig.timeout );
 		nextJob.setProperties( nextJobConfig.properties );
