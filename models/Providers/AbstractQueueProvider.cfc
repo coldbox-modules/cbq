@@ -44,6 +44,8 @@ component accessors="true" {
 		param config.properties = {};
 
 		instance.setId( arguments.jobId );
+		instance.setQueue( isNull( config.backoff ) ? javacast( "null", "" ) : config.backoff );
+		instance.setConnection( isNull( config.connection ) ? javacast( "null", "" ) : config.connection );
 		instance.setBackoff( isNull( config.backoff ) ? javacast( "null", "" ) : config.backoff );
 		instance.setTimeout( isNull( config.timeout ) ? javacast( "null", "" ) : config.timeout );
 		instance.setProperties( config.properties );

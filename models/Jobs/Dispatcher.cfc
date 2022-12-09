@@ -26,7 +26,7 @@ component singleton accessors="true" {
 			queueName = queueName,
 			payload = serializeJSON( arguments.job.getMemento() ),
 			delay = delay,
-			attempts = 1
+			attempts = 1 // TODO: shouldn't this be 0?
 		);
 
 		return this;
