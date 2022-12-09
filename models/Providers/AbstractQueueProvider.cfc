@@ -220,7 +220,7 @@ component accessors="true" {
 		);
 
 		if ( chain.len() >= 2 ) {
-			nextJob.setChained( nextJobConfig.chained );
+			nextJob.setChained( chain.slice( 2 ) );
 		}
 
 		nextJob.dispatch();
