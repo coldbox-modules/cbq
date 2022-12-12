@@ -5,6 +5,7 @@ component accessors="true" {
 	property name="async" inject="coldbox:asyncManager";
 	property name="log" inject="logbox:logger:{this}";
 	property name="wirebox" inject="wirebox";
+	property name="cbq" inject="@cbq";
 
 	property name="name";
 	property name="properties";
@@ -209,9 +210,8 @@ component accessors="true" {
 		}
 
 		var nextJobConfig = chain[ 1 ];
-		var nextJob = variables.wirebox.getInstance( nextJobConfig.mapping );
+		var nextJob = variables.cbq.job( nextJobConfig.mapping );
 		param nextJobConfig.properties = {};
-
 		nextJob.setQueue( isNull( nextJobConfig.queue ) ? javacast( "null", "" ) : nextJobConfig.queue );
 		nextJob.setConnection( isNull( nextJobConfig.connection ) ? javacast( "null", "" ) : nextJobConfig.connection );
 		nextJob.setBackoff( isNull( nextJobConfig.backoff ) ? javacast( "null", "" ) : nextJobConfig.backoff );

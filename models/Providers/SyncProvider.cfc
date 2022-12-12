@@ -65,7 +65,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 			}
 
 			var nextJobConfig = chain[ 1 ];
-			var nextJob = variables.wirebox.getInstance( nextJobConfig.mapping );
+			var nextJob = variables.cbq.job( nextJobConfig.mapping );
 			param nextJobConfig.properties = {};
 
 			nextJob.setBackoff( isNull( nextJobConfig.backoff ) ? javacast( "null", "" ) : nextJobConfig.backoff );

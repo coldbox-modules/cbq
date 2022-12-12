@@ -1,6 +1,7 @@
 component accessors="true" {
 
 	property name="dispatcher" inject="provider:Dispatcher@cbq";
+	property name="cbq" inject="provider:@cbq";
 	property name="wirebox" inject="wirebox";
 	property name="repository";
 
@@ -78,7 +79,7 @@ component accessors="true" {
 		}
 
 		var thenJobConfig = variables.options.thenJob;
-		var thenJob = variables.wirebox.getInstance( thenJobConfig.mapping );
+		var thenJob = variables.cbq.job( thenJobConfig.mapping );
 		param thenJobConfig.properties = {};
 
 		thenJob.setBackoff( isNull( thenJobConfig.backoff ) ? javacast( "null", "" ) : thenJobConfig.backoff );
@@ -116,7 +117,7 @@ component accessors="true" {
 		}
 
 		var catchJobConfig = variables.options.catchJob;
-		var catchJob = variables.wirebox.getInstance( catchJobConfig.mapping );
+		var catchJob = variables.cbq.job( catchJobConfig.mapping );
 		param catchJobConfig.properties = {};
 
 		catchJob.setBackoff( isNull( catchJobConfig.backoff ) ? javacast( "null", "" ) : catchJobConfig.backoff );
@@ -155,7 +156,7 @@ component accessors="true" {
 		}
 
 		var finallyJobConfig = variables.options.finallyJob;
-		var finallyJob = variables.wirebox.getInstance( finallyJobConfig.mapping );
+		var finallyJob = variables.cbq.job( finallyJobConfig.mapping );
 		param finallyJobConfig.properties = {};
 
 		finallyJob.setBackoff( isNull( finallyJobConfig.backoff ) ? javacast( "null", "" ) : finallyJobConfig.backoff );
