@@ -21,8 +21,8 @@ component extends="AbstractJob" accessors="true" {
 	public struct function getMemento() {
 		return {
 			"id" : this.getId(),
-			"connection": this.getConnection(),
-			"queue": this.getQueue(),
+			"connection" : this.getConnection(),
+			"queue" : this.getQueue(),
 			"mapping" : this.getMapping(),
 			"properties" : this.getProperties(),
 			"backoff" : this.getBackoff(),
