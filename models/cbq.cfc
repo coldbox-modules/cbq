@@ -23,6 +23,7 @@ component singleton accessors="true" {
 		struct properties = {},
 		array chain = [],
 		string queue,
+		string connection,
 		numeric backoff,
 		numeric timeout,
 		numeric maxAttempts
@@ -38,13 +39,7 @@ component singleton accessors="true" {
 			}
 		}
 
-		arguments.job.setBackoff( isNull( arguments.backoff ) ? javacast( "null", "" ) : arguments.backoff );
-		arguments.job.setTimeout( isNull( arguments.timeout ) ? javacast( "null", "" ) : arguments.timeout );
-		arguments.job.setProperties( arguments.properties );
-		arguments.job.setMaxAttempts( isNull( arguments.maxAttempts ) ? javacast( "null", "" ) : arguments.maxAttempts );
-		arguments.job.chain( arguments.chain );
-
-		return arguments.job;
+		return arguments.job.applyMemento( arguments );
 	}
 
 	public AbstractJob function chain( required array jobs ) {

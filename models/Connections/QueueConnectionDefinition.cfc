@@ -13,6 +13,13 @@ component accessors="true" {
 		return this;
 	}
 
+	/**
+	 * Sets the Provider to be used for this Queue Connection.
+	 * The Provider passed can be any valid WireBox mapping and must
+	 * implement the `IQueueProvider` interface.
+	 *
+	 * @provider A valid WireBox mapping to the desired Provider.
+	 */
 	public QueueConnectionDefinition function provider( required any provider ) {
 		variables.provider = arguments.provider;
 		return this;

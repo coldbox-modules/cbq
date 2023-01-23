@@ -30,6 +30,20 @@ component accessors="true" {
 		);
 	}
 
+	public any function setProperties( required struct properties ) {
+		variables.properties = arguments.properties;
+		for ( var key in arguments.properties ) {
+			if ( structKeyExists( variables, "set#key#" ) ) {
+				invoke(
+					this,
+					"set#key#",
+					{ "1" : arguments.properties[ key ] }
+				);
+			}
+		}
+		return this;
+	}
+
 	public AbstractJob function onConnection( required string name ) {
 		setConnection( arguments.name );
 		return this;
@@ -91,6 +105,38 @@ component accessors="true" {
 			"currentAttempt" : this.getCurrentAttempt(),
 			"chained" : this.getChained()
 		};
+	}
+
+	public AbstractJob function applyMemento( required struct memento ) {
+		param arguments.memento.properties = {};
+
+		if ( !isNull( arguments.memento.queue ) ) {
+			this.setQueue( arguments.memento.queue );
+		}
+
+		if ( !isNull( arguments.memento.connection ) ) {
+			this.setConnection( arguments.memento.connection );
+		}
+
+		if ( !isNull( arguments.memento.timeout ) ) {
+			this.setTimeout( arguments.memento.timeout );
+		}
+
+		if ( !isNull( arguments.memento.backoff ) ) {
+			this.setBackoff( arguments.memento.backoff );
+		}
+
+		if ( !isNull( arguments.memento.maxAttempts ) ) {
+			this.setMaxAttempts( arguments.memento.maxAttempts );
+		}
+
+		if ( !isNull( arguments.memento.chained ) ) {
+			this.setChained( arguments.memento.chained );
+		}
+
+		this.setProperties( arguments.memento.properties );
+
+		return this;
 	}
 
 }

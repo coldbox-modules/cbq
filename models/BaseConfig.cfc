@@ -35,6 +35,11 @@ component singleton accessors="true" {
 		return variables.connections[ arguments.name ];
 	}
 
+	/**
+	 * Creates a new QueueConnectionDefinition component to configure a new Queue Connection.
+	 *
+	 * @name The unique name for the new Queue Connection.
+	 */
 	public QueueConnectionDefinition function newConnection( required string name ) {
 		var connectionDefinition = newQueueConnectionDefinitionInstance();
 		connectionDefinition.setName( arguments.name );

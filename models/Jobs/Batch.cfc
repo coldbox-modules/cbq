@@ -16,6 +16,9 @@ component accessors="true" {
 	property name="cancelledDate" type="numeric";
 	property name="completedDate" type="numeric";
 
+	// add isCancelled method
+
+
 	/**
 	 * Add additional jobs to the batch.
 	 */
@@ -80,15 +83,7 @@ component accessors="true" {
 
 		var thenJobConfig = variables.options.thenJob;
 		var thenJob = variables.cbq.job( thenJobConfig.mapping );
-		param thenJobConfig.properties = {};
-
-		thenJob.setBackoff( isNull( thenJobConfig.backoff ) ? javacast( "null", "" ) : thenJobConfig.backoff );
-		thenJob.setTimeout( isNull( thenJobConfig.timeout ) ? javacast( "null", "" ) : thenJobConfig.timeout );
-		thenJob.setProperties( thenJobConfig.properties );
-		thenJob.setMaxAttempts(
-			isNull( thenJobConfig.maxAttempts ) ? javacast( "null", "" ) : thenJobConfig.maxAttempts
-		);
-		thenJob.setChained( isNull( thenJobConfig.chained ) ? javacast( "null", "" ) : thenJobConfig.chained );
+		thenJob.applyMemento( thenJobConfig );
 		thenJob.withBatchId( variables.id );
 		thenJob.setIsLifecycleJob( true );
 
@@ -118,15 +113,7 @@ component accessors="true" {
 
 		var catchJobConfig = variables.options.catchJob;
 		var catchJob = variables.cbq.job( catchJobConfig.mapping );
-		param catchJobConfig.properties = {};
-
-		catchJob.setBackoff( isNull( catchJobConfig.backoff ) ? javacast( "null", "" ) : catchJobConfig.backoff );
-		catchJob.setTimeout( isNull( catchJobConfig.timeout ) ? javacast( "null", "" ) : catchJobConfig.timeout );
-		catchJob.setProperties( catchJobConfig.properties );
-		catchJob.setMaxAttempts(
-			isNull( catchJobConfig.maxAttempts ) ? javacast( "null", "" ) : catchJobConfig.maxAttempts
-		);
-		catchJob.setChained( isNull( catchJobConfig.chained ) ? javacast( "null", "" ) : catchJobConfig.chained );
+		catchJob.applyMemento( catchJobConfig );
 		catchJob.withBatchId( variables.id );
 		catchJob.setIsLifecycleJob( true );
 		catchJob.setError( arguments.error );
@@ -157,18 +144,9 @@ component accessors="true" {
 
 		var finallyJobConfig = variables.options.finallyJob;
 		var finallyJob = variables.cbq.job( finallyJobConfig.mapping );
-		param finallyJobConfig.properties = {};
-
-		finallyJob.setBackoff( isNull( finallyJobConfig.backoff ) ? javacast( "null", "" ) : finallyJobConfig.backoff );
-		finallyJob.setTimeout( isNull( finallyJobConfig.timeout ) ? javacast( "null", "" ) : finallyJobConfig.timeout );
-		finallyJob.setProperties( finallyJobConfig.properties );
-		finallyJob.setMaxAttempts(
-			isNull( finallyJobConfig.maxAttempts ) ? javacast( "null", "" ) : finallyJobConfig.maxAttempts
-		);
-		finallyJob.setChained( isNull( finallyJobConfig.chained ) ? javacast( "null", "" ) : finallyJobConfig.chained );
+		finallyJob.applyMemento( finallyJobConfig );
 		finallyJob.withBatchId( variables.id );
 		finallyJob.setIsLifecycleJob( true );
-
 		finallyJob.dispatch();
 	}
 

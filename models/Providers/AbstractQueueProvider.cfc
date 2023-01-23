@@ -42,17 +42,9 @@ component accessors="true" {
 		}
 
 		var instance = variables.wirebox.getInstance( config.mapping );
-		param config.properties = {};
-
+		instance.applyMemento( config );
 		instance.setId( arguments.jobId );
-		instance.setQueue( isNull( config.queue ) ? javacast( "null", "" ) : config.queue );
-		instance.setConnection( isNull( config.connection ) ? javacast( "null", "" ) : config.connection );
-		instance.setBackoff( isNull( config.backoff ) ? javacast( "null", "" ) : config.backoff );
-		instance.setTimeout( isNull( config.timeout ) ? javacast( "null", "" ) : config.timeout );
-		instance.setProperties( config.properties );
-		instance.setMaxAttempts( isNull( config.maxAttempts ) ? javacast( "null", "" ) : config.maxAttempts );
 		instance.setCurrentAttempt( arguments.currentAttempt );
-		instance.setChained( config.chained );
 
 		if ( config.keyExists( "batchId" ) ) {
 			instance.withBatchId( config.batchId );
@@ -212,14 +204,28 @@ component accessors="true" {
 		var nextJobConfig = chain[ 1 ];
 		var nextJob = variables.cbq.job( nextJobConfig.mapping );
 		param nextJobConfig.properties = {};
-		nextJob.setQueue( isNull( nextJobConfig.queue ) ? javacast( "null", "" ) : nextJobConfig.queue );
-		nextJob.setConnection( isNull( nextJobConfig.connection ) ? javacast( "null", "" ) : nextJobConfig.connection );
-		nextJob.setBackoff( isNull( nextJobConfig.backoff ) ? javacast( "null", "" ) : nextJobConfig.backoff );
-		nextJob.setTimeout( isNull( nextJobConfig.timeout ) ? javacast( "null", "" ) : nextJobConfig.timeout );
+
+		if ( !isNull( nextJobConfig.queue ) ) {
+			nextJob.setQueue( nextJobConfig.queue );
+		}
+
+		if ( !isNull( nextJobConfig.connection ) ) {
+			nextJob.setConnection( nextJobConfig.connection );
+		}
+
+		if ( !isNull( nextJobConfig.timeout ) ) {
+			nextJob.setTimeout( nextJobConfig.timeout );
+		}
+
+		if ( !isNull( nextJobConfig.backoff ) ) {
+			nextJob.setBackoff( nextJobConfig.backoff );
+		}
+
+		if ( !isNull( nextJobConfig.maxAttempts ) ) {
+			nextJob.setMaxAttempts( nextJobConfig.maxAttempts );
+		}
+
 		nextJob.setProperties( nextJobConfig.properties );
-		nextJob.setMaxAttempts(
-			isNull( nextJobConfig.maxAttempts ) ? javacast( "null", "" ) : nextJobConfig.maxAttempts
-		);
 
 		if ( chain.len() >= 2 ) {
 			nextJob.setChained( chain.slice( 2 ) );

@@ -66,14 +66,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 
 			var nextJobConfig = chain[ 1 ];
 			var nextJob = variables.cbq.job( nextJobConfig.mapping );
-			param nextJobConfig.properties = {};
-
-			nextJob.setBackoff( isNull( nextJobConfig.backoff ) ? javacast( "null", "" ) : nextJobConfig.backoff );
-			nextJob.setTimeout( isNull( nextJobConfig.timeout ) ? javacast( "null", "" ) : nextJobConfig.timeout );
-			nextJob.setProperties( nextJobConfig.properties );
-			nextJob.setMaxAttempts(
-				isNull( nextJobConfig.maxAttempts ) ? javacast( "null", "" ) : nextJobConfig.maxAttempts
-			);
+			nextJob.applyMemento( nextJobConfig );
 
 			if ( chain.len() >= 2 ) {
 				nextJob.setChained( chain.slice( 2 ) );

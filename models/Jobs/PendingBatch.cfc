@@ -7,6 +7,8 @@ component accessors="true" extends="AbstractJob" {
 	property name="finallyJob";
 	property name="allowFailures" default="false";
 
+	// TODO: allowFailures() method
+
 	public PendingBatch function init() {
 		variables.jobs = [];
 		return this;
