@@ -18,7 +18,8 @@ component accessors="true" extends="AbstractQueueProvider" {
 				arguments.payload,
 				createUUID(),
 				arguments.attempts
-			)
+			),
+			variables.pool
 		);
 		return this;
 	}
@@ -29,7 +30,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 		};
 	}
 
-	private void function marshalJob( required AbstractJob job ) {
+	private void function marshalJob( required AbstractJob job, required WorkerPool pool ) {
 		try {
 			if ( variables.log.canDebug() ) {
 				variables.log.debug( "Marshaling job ###job.getId()#", job.getMemento() );
@@ -101,18 +102,6 @@ component accessors="true" extends="AbstractQueueProvider" {
 				throw( e );
 			}
 		}
-	}
-
-	private string function getMaxAttemptsForJob( required AbstractJob job ) {
-		if ( !isNull( arguments.job.getMaxAttempts() ) ) {
-			return arguments.job.getMaxAttempts();
-		}
-
-		if ( !isNull( variables.pool ) ) {
-			return variables.pool.getMaxAttempts();
-		}
-
-		return 1;
 	}
 
 }

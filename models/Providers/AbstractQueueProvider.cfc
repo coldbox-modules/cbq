@@ -29,6 +29,13 @@ component accessors="true" {
 		);
 	}
 
+	public any function listen( required WorkerPool pool ) {
+		throw(
+			type = "MissingAbstractMethod",
+			message = "This is an abstract method and must be implemented in a subclass."
+		);
+	}
+
 	public any function deserializeJob(
 		required string payload,
 		required any jobId,
@@ -64,7 +71,7 @@ component accessors="true" {
 		return variables.javaInstant.now().getEpochSecond() + arguments.delay;
 	}
 
-	private void function marshalJob( required AbstractJob job ) {
+	private void function marshalJob( required AbstractJob job, required WorkerPool pool ) {
 		variables.async
 			.newFuture( function() {
 				if ( variables.log.canDebug() ) {
@@ -80,8 +87,8 @@ component accessors="true" {
 				}
 
 				return job.handle();
-			}, variables.executor )
-			.orTimeout( getTimeoutForJob( arguments.job ), "seconds" )
+			}, arguments.pool.getExecutor() )
+			.orTimeout( getTimeoutForJob( arguments.job, arguments.pool ), "seconds" )
 			.then( function( result ) {
 				if ( variables.log.canDebug() ) {
 					variables.log.debug( "Job ###job.getId()# completed successfully." );
@@ -112,9 +119,9 @@ component accessors="true" {
 
 				variables.interceptorService.announce( "onCBQJobException", { "job" : job, "exception" : e } );
 
-				if ( job.getCurrentAttempt() < getMaxAttemptsForJob( job ) ) {
+				if ( job.getCurrentAttempt() < getMaxAttemptsForJob( job, pool ) ) {
 					variables.log.debug( "Releasing job ###job.getId()#" );
-					releaseJob( job );
+					releaseJob( job, pool );
 					variables.log.debug( "Released job ###job.getId()#" );
 				} else {
 					variables.log.debug( "Maximum attempts reached. Deleting job ###job.getId()#" );
@@ -138,58 +145,58 @@ component accessors="true" {
 	private void function afterJobFailed( required any id, AbstractJob job ) {
 	}
 
-	private void function releaseJob( required AbstractJob job ) {
+	private void function releaseJob( required AbstractJob job, required WorkerPool pool ) {
 		push(
-			getQueueForJob( arguments.job ),
+			getQueueForJob( arguments.job, arguments.pool ),
 			serializeJSON( job.getMemento() ),
-			getBackoffForJob( arguments.job ),
+			getBackoffForJob( arguments.job, arguments.pool ),
 			arguments.job.getCurrentAttempt() + 1
 		);
 	}
 
-	private string function getQueueForJob( required AbstractJob job ) {
+	private string function getQueueForJob( required AbstractJob job, required WorkerPool pool ) {
 		if ( !isNull( arguments.job.getQueue() ) ) {
 			return arguments.job.getQueue();
 		}
 
-		if ( !isNull( variables.pool ) ) {
-			return variables.pool.getQueue();
+		if ( !isNull( arguments.pool ) ) {
+			return arguments.pool.getQueues()[ 1 ];
 		}
 
 		return "default";
 	}
 
-	private string function getBackoffForJob( required AbstractJob job ) {
+	private numeric function getBackoffForJob( required AbstractJob job, required WorkerPool pool ) {
 		if ( !isNull( arguments.job.getBackoff() ) ) {
 			return arguments.job.getBackoff();
 		}
 
-		if ( !isNull( variables.pool ) ) {
-			return variables.pool.getBackoff();
+		if ( !isNull( arguments.pool ) ) {
+			return arguments.pool.getBackoff();
 		}
 
 		return 0;
 	}
 
-	private string function getTimeoutForJob( required AbstractJob job ) {
+	private numeric function getTimeoutForJob( required AbstractJob job, required WorkerPool pool ) {
 		if ( !isNull( arguments.job.getTimeout() ) ) {
 			return arguments.job.getTimeout();
 		}
 
-		if ( !isNull( variables.pool ) ) {
-			return variables.pool.getTimeout();
+		if ( !isNull( arguments.pool ) ) {
+			return arguments.pool.getTimeout();
 		}
 
 		return 60;
 	}
 
-	private string function getMaxAttemptsForJob( required AbstractJob job ) {
+	private numeric function getMaxAttemptsForJob( required AbstractJob job, required WorkerPool pool ) {
 		if ( !isNull( arguments.job.getMaxAttempts() ) ) {
 			return arguments.job.getMaxAttempts();
 		}
 
-		if ( !isNull( variables.pool ) ) {
-			return variables.pool.getMaxAttempts();
+		if ( !isNull( arguments.pool ) ) {
+			return arguments.pool.getMaxAttempts();
 		}
 
 		return 1;

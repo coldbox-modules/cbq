@@ -125,15 +125,23 @@ component singleton accessors="true" {
 	}
 
 	public WorkerPoolDefinition function newWorkerPool(
-		required string connectionName,
+		required string name,
+		string connectionName,
 		numeric quantity = 1,
-		string queue = "default"
+		array queues = [ "*" ],
+		boolean force = false
 	) {
 		var workerPoolDefinition = newWorkerPoolDefinitionInstance();
-		workerPoolDefinition.setConnectionName( arguments.connectionName );
+		workerPoolDefinition.setName( arguments.name );
+		if ( !isNull( arguments.connectionName ) ) {
+			workerPoolDefinition.setConnectionName( arguments.connectionName );
+		}
 		workerPoolDefinition.setQuantity( arguments.quantity );
-		workerPoolDefinition.setQueue( arguments.queue );
-		variables.workerPoolDefinitions[ arguments.connectionName ] = workerPoolDefinition;
+		workerPoolDefinition.setQueues( arguments.queues );
+		if ( variables.workerPoolDefinitions.keyExists( workerPoolDefinition.getName() ) && !arguments.force ) {
+			throw( "Duplicate Worker Pool name: [#workerPoolDefinition.getName()#]. Either use a different name or pass the `force` parameter to overwrite the existing Worker Pool." );
+		}
+		variables.workerPoolDefinitions[ workerPoolDefinition.getName() ] = workerPoolDefinition;
 		return workerPoolDefinition;
 	}
 
@@ -161,9 +169,10 @@ component singleton accessors="true" {
 
 	public WorkerPool function registerWorkerPoolFromDefinition( required WorkerPoolDefinition definition ) {
 		return registerWorkerPool(
+			name = arguments.definition.getName(),
 			connectionName = arguments.definition.getConnectionName(),
 			quantity = arguments.definition.getQuantity(),
-			queue = arguments.definition.getQueue(),
+			queues = arguments.definition.getQueues(),
 			backoff = arguments.definition.getBackoff(),
 			timeout = arguments.definition.getTimeout(),
 			maxAttempts = arguments.definition.getMaxAttempts()
@@ -171,30 +180,29 @@ component singleton accessors="true" {
 	}
 
 	public WorkerPool function registerWorkerPool(
+		required string name,
 		required string connectionName,
 		numeric quantity = 1,
-		string queue = "default",
+		array queues = [ "*" ],
 		numeric backoff = 0,
 		numeric timeout = 60,
 		numeric maxAttempts = 1
 	) {
-		var connection = getConnection( arguments.connectionName );
-
 		var instance = newWorkerPoolInstance();
+		instance.setName( arguments.name );
 		instance.setConnectionName( arguments.connectionName );
-		instance.setConnection( connection );
-
+		instance.setConnection( getConnection( arguments.connectionName ) );
 		instance.setQuantity( arguments.quantity );
-		instance.setQueue( arguments.queue );
+		instance.setQueues( arguments.queues );
 		instance.setBackoff( arguments.backoff );
 		instance.setTimeout( arguments.timeout );
 		instance.setMaxAttempts( arguments.maxAttempts );
 
-		if ( structKeyExists( variables.workerPools, arguments.connectionName ) ) {
-			variables.workerPools[ arguments.connectionName ].shutdown();
+		if ( structKeyExists( variables.workerPools, arguments.name ) ) {
+			variables.workerPools[ arguments.name ].shutdown();
 		}
 
-		variables.workerPools[ arguments.connectionName ] = instance;
+		variables.workerPools[ arguments.name ] = instance;
 		instance.startWorkers();
 		return instance;
 	}

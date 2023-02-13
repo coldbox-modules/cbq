@@ -2,12 +2,18 @@ component accessors="true" {
 
 	property name="config" inject="provider:Config@cbq";
 
+	property name="name" type="string";
 	property name="connectionName";
 	property name="quantity" default="1";
-	property name="queue" default="default";
+	property name="queues" type="array";
 	property name="backoff" default="0";
 	property name="timeout" default="60";
 	property name="maxAttempts" default="1";
+
+	public WorkerPoolDefinition function init() {
+		variables.queues = [ "*" ];
+		return this;
+	}
 
 	public WorkerPoolDefinition function forConnection( required string name ) {
 		setConnectionName( arguments.name );
@@ -19,8 +25,11 @@ component accessors="true" {
 		return this;
 	}
 
-	public WorkerPoolDefinition function onQueue( required string name ) {
-		setQueue( arguments.name );
+	public WorkerPoolDefinition function onQueues( required any queues ) {
+		if ( !isArray( arguments.queues ) ) {
+			arguments.queues = arraySlice( arguments.queues.split( ",\s*" ), 1 );
+		}
+		setQueues( arguments.queues );
 		return this;
 	}
 

@@ -39,24 +39,36 @@ component accessors="true" extends="AbstractQueueProvider" {
 	}
 
 	public function function startWorker( required WorkerPool pool ) {
-		variables.pool = arguments.pool;
-		variables.currentExecutorCount++;
-		if ( variables.currentExecutorCount > 1 ) {
-			var currentPoolSize = variables.executor.getCorePoolSize();
-			var increasedPoolSize = javacast( "int", currentPoolSize + 1 );
-			variables.executor.getNative().setMaximumPoolSize( increasedPoolSize );
-			variables.executor.getNative().setCorePoolSize( increasedPoolSize );
+		arguments.pool.incrementCurrentExecutorCount();
+		if ( arguments.pool.getCurrentExecutorCount() > 1 ) {
+			var increasedPoolSize = javacast( "int", arguments.pool.getCurrentExecutorCount() );
+			arguments.pool
+				.getExecutor()
+				.getNative()
+				.setMaximumPoolSize( increasedPoolSize );
+			arguments.pool
+				.getExecutor()
+				.getNative()
+				.setCorePoolSize( increasedPoolSize );
 		}
 
 		return function() {
-			variables.currentExecutorCount--;
-			var current = variables.executor.getCorePoolSize();
+			pool.decrementCurrentExecutorCount();
+			var current = pool.getExecutor().getCorePoolSize();
+			var decreasedPoolSize = javacast( "int", current - 1 );
 			if ( current > 1 ) {
-				var decreasedPoolSize = javacast( "int", current - 1 );
-				variables.executor.getNative().setCorePoolSize( decreasedPoolSize );
-				variables.executor.getNative().setMaximumPoolSize( decreasedPoolSize );
+				pool.getExecutor()
+					.getNative()
+					.setCorePoolSize( decreasedPoolSize );
+				pool.getExecutor()
+					.getNative()
+					.setMaximumPoolSize( decreasedPoolSize );
 			}
 		};
+	}
+
+	public any function listen( required WorkerPool pool ) {
+		return this;
 	}
 
 }

@@ -65,7 +65,7 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 					expect( defaultWorkerPool.getConnectionName() ).toBe( "default" );
 					expect( defaultWorkerPool.getConnection().getName() ).toBe( "default" );
 					expect( defaultWorkerPool.getQuantity() ).toBe( 1 );
-					expect( defaultWorkerPool.getQueue() ).toBe( "default" );
+					expect( defaultWorkerPool.getQueues() ).toBe( [ "*" ] );
 					expect( defaultWorkerPool.getBackoff() ).toBe( 0 );
 					expect( defaultWorkerPool.getTimeout() ).toBe( 60 );
 					expect( defaultWorkerPool.getMaxAttempts() ).toBe( 1 );
@@ -74,6 +74,7 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 				it( "throws an exception when the associated connection does not exist", function() {
 					var config = getWireBox().getInstance( "Config@cbq" );
 					var workerPoolDefinition = config.newWorkerPoolDefinitionInstance();
+					workerPoolDefinition.setName( "default" );
 					workerPoolDefinition.setConnectionName( "does-not-exist" );
 					expect( function() {
 						workerPoolDefinition.register();
@@ -91,9 +92,10 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 				it( "can define a worker pool", function() {
 					var config = getWireBox().getInstance( "Config@cbq" );
 
-					var workerPoolDefinition = config.newWorkerPool( "default" );
+					var workerPoolDefinition = config.newWorkerPool( name = "default", force = true );
+					workerPoolDefinition.forConnection( "default" );
 					workerPoolDefinition.quantity( 4 );
-					workerPoolDefinition.onQueue( "default" );
+					workerPoolDefinition.onQueues( "default" );
 					workerPoolDefinition.backoff( 5 );
 					workerPoolDefinition.timeout( 30 );
 					workerPoolDefinition.maxAttempts( 3 );
@@ -103,7 +105,7 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 					expect( workerPool.getConnectionName() ).toBe( "default" );
 					expect( workerPool.getConnection().getName() ).toBe( "default" );
 					expect( workerPool.getQuantity() ).toBe( 4 );
-					expect( workerPool.getQueue() ).toBe( "default" );
+					expect( workerPool.getQueues() ).toBe( [ "default" ] );
 					expect( workerPool.getBackoff() ).toBe( 5 );
 					expect( workerPool.getTimeout() ).toBe( 30 );
 					expect( workerPool.getMaxAttempts() ).toBe( 3 );
@@ -141,7 +143,14 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 						} );
 					expect( provider.$count( "startWorker" ) ).toBe( 0 );
 
-					var workerPool = config.newWorkerPool( "default", 1 ).register();
+					var workerPool = config
+						.newWorkerPool(
+							name = "default",
+							connectionName = "default",
+							quantity = 1,
+							force = true
+						)
+						.register();
 					expect( workerPool.getQuantity() ).toBe( 1 );
 					expect( workerPool.getWorkerHooks() ).toHaveLength( workerPool.getQuantity() );
 					expect( provider.$count( "startWorker" ) ).toBe( 1 );
@@ -170,7 +179,14 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 						} );
 					expect( provider.$count( "startWorker" ) ).toBe( 0 );
 
-					var workerPool = config.newWorkerPool( "default", 3 ).register();
+					var workerPool = config
+						.newWorkerPool(
+							name = "default",
+							connectionName = "default",
+							quantity = 3,
+							force = true
+						)
+						.register();
 					expect( workerPool.getQuantity() ).toBe( 3 );
 					expect( workerPool.getWorkerHooks() ).toHaveLength( workerPool.getQuantity() );
 					expect( provider.$count( "startWorker" ) ).toBe( 3 );
@@ -199,7 +215,14 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 						} );
 					expect( provider.$count( "startWorker" ) ).toBe( 0 );
 
-					var workerPool = config.newWorkerPool( "default", 3 ).register();
+					var workerPool = config
+						.newWorkerPool(
+							name = "default",
+							connectionName = "default",
+							quantity = 3,
+							force = true
+						)
+						.register();
 					expect( workerPool.getQuantity() ).toBe( 3 );
 					expect( workerPool.getWorkerHooks() ).toHaveLength( workerPool.getQuantity() );
 					expect( provider.$count( "startWorker" ) ).toBe( 3 );
@@ -228,13 +251,27 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 						} );
 					expect( provider.$count( "startWorker" ) ).toBe( 0 );
 
-					var workerPool = config.newWorkerPool( "default", 1 ).register();
+					var workerPool = config
+						.newWorkerPool(
+							name = "default",
+							connectionName = "default",
+							quantity = 1,
+							force = true
+						)
+						.register();
 					expect( workerPool.getQuantity() ).toBe( 1 );
 					expect( workerPool.getWorkerHooks() ).toHaveLength( workerPool.getQuantity() );
 					expect( provider.$count( "startWorker" ) ).toBe( 1 );
 					expect( stopCalled ).toBe( 0 );
 
-					var workerPoolUpdated = config.newWorkerPool( "default", 3 ).register();
+					var workerPoolUpdated = config
+						.newWorkerPool(
+							name = "default",
+							connectionName = "default",
+							quantity = 3,
+							force = true
+						)
+						.register();
 
 					expect( workerPoolUpdated.getQuantity() ).toBe( 3 );
 					expect( workerPoolUpdated.getWorkerHooks() ).toHaveLength( workerPoolUpdated.getQuantity() );

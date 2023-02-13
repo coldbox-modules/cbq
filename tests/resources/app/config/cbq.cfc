@@ -4,7 +4,7 @@ component accessors="true" {
 		this.scaleCalled = false;
 		newConnection( "default" ).setProvider( "ColdBoxAsyncProvider@cbq" ).setProperties( {} );
 
-		newWorkerPool( "default" );
+		newWorkerPool( "default" ).forConnection( "default" );
 	}
 
 	function testing() {
