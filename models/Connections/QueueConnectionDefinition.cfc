@@ -25,11 +25,6 @@ component accessors="true" {
 		return this;
 	}
 
-	public QueueConnectionDefinition function onQueue( required string name ) {
-		setDefaultQueue( arguments.name );
-		return this;
-	}
-
 	public QueueConnectionDefinition function markAsDefault( boolean check = true ) {
 		variables.makeDefault = arguments.check;
 		return this;

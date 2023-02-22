@@ -30,6 +30,10 @@ component accessors="true" extends="AbstractQueueProvider" {
 		};
 	}
 
+	public any function listen( required WorkerPool pool ) {
+		return this;
+	}
+
 	private void function marshalJob( required AbstractJob job, required WorkerPool pool ) {
 		try {
 			if ( variables.log.canDebug() ) {

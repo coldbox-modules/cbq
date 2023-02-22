@@ -10,6 +10,16 @@ component accessors="true" {
 	property name="name";
 	property name="properties";
 
+	/**
+	 * Persists a serialized job to the Queue Connection
+	 *
+	 * @queueName The queue name for the job.
+	 * @payload   The serialized job string.
+	 * @delay     The delay (in seconds) before working the job.
+	 * @attempts  The current attempt number.
+	 *
+	 * @return    AbstractQueueProvider
+	 */
 	public any function push(
 		required string queueName,
 		required string payload,
@@ -22,6 +32,13 @@ component accessors="true" {
 		);
 	}
 
+	/**
+	 * Starts a worker for a Worker Pool on this Queue Connection.
+	 *
+	 * @pool    The Worker Pool that is working this Queue Connection.
+	 *
+	 * @return  A function that when called will stop this worker.
+	 */
 	public function function startWorker( required WorkerPool pool ) {
 		throw(
 			type = "MissingAbstractMethod",
@@ -29,6 +46,13 @@ component accessors="true" {
 		);
 	}
 
+	/**
+	 * Starts any background processes needed for the Worker Pool.
+	 *
+	 * @pool    The Worker Pool that is working this Queue Connection.
+	 *
+	 * @return  AbstractQueueProvider
+	 */
 	public any function listen( required WorkerPool pool ) {
 		throw(
 			type = "MissingAbstractMethod",

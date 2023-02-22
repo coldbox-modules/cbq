@@ -16,6 +16,7 @@ component singleton accessors="true" {
 	}
 
 	public any function reset() {
+		// TODO: shutdown existing workers?
 		variables.connectionDefinitions = {};
 		variables.connections = {};
 		variables.workerPoolDefinitions = {};
