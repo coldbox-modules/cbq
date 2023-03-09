@@ -33,7 +33,13 @@ component accessors="true" extends="AbstractQueueProvider" {
 				}
 
 				if ( log.canError() ) {
-					log.error( "Exception when running job #job.getId()#:", serializeJSON( e ) );
+					log.error(
+						"Exception when running job: #e.message#",
+						{
+							"job" : job.getMemento(),
+							"exception" : e
+						}
+					);
 				}
 			} );
 	}

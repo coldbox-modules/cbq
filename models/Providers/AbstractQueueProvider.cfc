@@ -138,7 +138,13 @@ component accessors="true" {
 				}
 
 				if ( log.canError() ) {
-					log.error( "Exception when running job #job.getId()#:", serializeJSON( e ) );
+					log.error(
+						"Exception when running job: #e.message#",
+						{
+							"job" : job.getMemento(),
+							"exception" : e
+						}
+					);
 				}
 
 				variables.interceptorService.announce( "onCBQJobException", { "job" : job, "exception" : e } );

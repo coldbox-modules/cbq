@@ -33,9 +33,31 @@ component {
             var message = structKeyExists( arguments.exception, "getMessage" ) ? arguments.exception.getMessage() : arguments.exception.message;
             variables.log.error(
                 "Exception when running task [#arguments.task.getName()#]: #message#",
-                exception
+                {
+                    "task": getTaskMemento( task ),
+                    "exception": exception
+                }
             );
         }
+    }
+
+    private struct function getTaskMemento( task ) {
+        return {
+            "delay": task.getDelay(),
+            "period": task.getPeriod(),
+            "spacedDelay": task.getSpacedDelay(),
+            "timeunit": task.getTimeunit(),
+            "name": task.getName(),
+            "disabled": task.getDisabled(),
+            "timezone": task.getTimezone(),
+            "stats": task.getStats(),
+            "dayOfTheMonth": task.getDayOfTheMonth(),
+            "dayOfTheWeek": task.getDayOfTheWeek(),
+            "weekends": task.getWeekends(),
+            "weekdays": task.getWeekdays(),
+            "lastBusinessDay": task.getLastBusinessDay(),
+            "noOverlaps": task.getNoOverlaps()
+        };
     }
 
 }

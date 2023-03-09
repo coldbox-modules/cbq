@@ -77,8 +77,11 @@ component accessors="true" extends="AbstractQueueProvider" {
 			.onFailure( function( task, exception ) {
 				if ( variables.log.canError() ) {
 					variables.log.error(
-						"Exception when fetching database jobs for Worker Pool [#pool.getName()#]",
-						serializeJSON( arguments.exception )
+						"Exception when fetching database jobs for Worker Pool [#pool.getName()#]: #exception.message#",
+						{
+							"pool" : pool.getMemento(),
+							"exception" : arguments.exception
+						}
 					);
 				}
 			} )

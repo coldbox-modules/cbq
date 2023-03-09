@@ -93,4 +93,17 @@ component accessors="true" {
 		return this;
 	}
 
+	public struct function getMemento() {
+		return {
+			"name" : variables.name,
+			"quantity" : variables.quantity,
+			"queues" : variables.queues,
+			"backoff" : variables.backoff,
+			"timeout" : variables.timeout,
+			"maxAttempts" : variables.maxAttempts,
+			"connectionName" : variables.connectionName,
+			"currentExecutorCount" : variables.currentExecutorCount
+		};
+	}
+
 }
