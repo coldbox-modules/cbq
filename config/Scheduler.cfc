@@ -30,8 +30,9 @@ component {
 
     function onAnyTaskError( task, exception ) {
         if ( variables.log.canError() ) {
+            var message = structKeyExists( arguments.exception, "getMessage" ) ? arguments.exception.getMessage() : arguments.exception.message;
             variables.log.error(
-                "Exception when running task [#arguments.task.getName()#]: #arguments.exception.getMessage()#",
+                "Exception when running task [#arguments.task.getName()#]: #message#",
                 exception
             );
         }
