@@ -96,7 +96,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 
 			variables.interceptorService.announce( "onCBQJobException", { "job" : job, "exception" : e } );
 
-			if ( job.getCurrentAttempt() < getMaxAttemptsForJob( job, variables.pool ) ) {
+			if ( job.getCurrentAttempt() < getMaxAttemptsForJob( job, arguments.pool ) ) {
 				variables.log.debug( "Releasing job ###job.getId()#" );
 				releaseJob( job );
 				variables.log.debug( "Released job ###job.getId()#" );
