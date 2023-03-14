@@ -208,7 +208,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 		}
 	}
 
-	private void function releaseJob( required AbstractJob job ) {
+	private void function releaseJob( required AbstractJob job, required WorkerPool pool ) {
 		transaction {
 			if (
 				!newQuery()
@@ -223,7 +223,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 					.delete( options = variables.defaultQueryOptions );
 			}
 
-			super.releaseJob( arguments.job );
+			super.releaseJob( arguments.job, arguments.pool );
 		}
 	}
 
