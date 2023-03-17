@@ -15,7 +15,7 @@
     "description":"A protocol-based queueing system for ColdBox",
     "type":"modules",
     "dependencies":{
-        "qb":"^8.8.0",
+        "qb":"^9.1.0",
         "str":"^3.0.1"
     },
     "devDependencies":{
