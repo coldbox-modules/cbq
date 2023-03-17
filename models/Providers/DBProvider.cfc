@@ -27,11 +27,18 @@ component accessors="true" extends="AbstractQueueProvider" {
 
 	public any function listen( required WorkerPool pool ) {
 		variables.log.debug( "Registering DB Task for Worker Pool [#arguments.pool.getName()#]" );
-		variables.schedulerService.getSchedulers()[ "cbScheduler@cbq" ]
+		var forceRun = false;
+		var task = variables.schedulerService.getSchedulers()[ "cbScheduler@cbq" ]
 			.task( "cbq:db-watcher:#arguments.pool.getName()#" )
 			.call( () => {
+				var capacity = pool.getCurrentExecutorCount() - pool.getExecutor().getActiveCount() + ( forceRun ? 1 : 0 );
+				if ( forceRun ) {
+					forceRun = false;
+				}
+
 				var jobRecords = newQuery()
 					.from( variables.tableName )
+					.limit( capacity )
 					.lockForUpdate( skipLocked = true )
 					.when( !pool.shouldWorkAllQueues(), ( q ) => q.whereIn( "queue", pool.getQueues() ) )
 					.where( function( q1 ) {
@@ -53,12 +60,24 @@ component accessors="true" extends="AbstractQueueProvider" {
 							);
 						} );
 					} )
-					.orderByRaw( generateQueuePriorityOrderBy( pool ) )
+					.when( !pool.shouldWorkAllQueues(), ( q ) => {
+						q.orderByRaw( generateQueuePriorityOrderBy( pool ) )
+					} )
 					.orderByAsc( "id" )
 					.get( options = variables.defaultQueryOptions );
 
 				for ( var job in jobRecords ) {
-					variables.marshalJob( variables.deserializeJob( job.payload, job.id, job.attempts ), pool );
+					var jobCFC = variables.deserializeJob( job.payload, job.id, job.attempts );
+					markJobAsReserved( jobCFC );
+					variables.marshalJob(
+						job = jobCFC,
+						pool = pool,
+						afterJobHook = () => {
+							variables.log.debug( "Job finished. Immediately running the scheduled task again." );
+							forceRun = true;
+							task.run();
+						}
+					);
 				}
 
 				return jobRecords.len();
@@ -86,7 +105,20 @@ component accessors="true" extends="AbstractQueueProvider" {
 				}
 			} )
 			.when( function() {
-				return pool.getQuantity() > 0;
+				variables.log.debug( "Checking if we should fetch new database jobs for Worker Pool [#pool.getName()#].", {
+					"currentExecutorCount": pool.getCurrentExecutorCount(),
+					"activeCount": pool.getExecutor().getActiveCount(),
+					"willRun": pool.getCurrentExecutorCount() > 0 && pool.getExecutor().getActiveCount() < pool.getCurrentExecutorCount(),
+					"forceRun": forceRun
+				} );
+
+				if ( forceRun ) {
+					variables.log.debug( "forceRun is true so we will fetch new database jobs and reset forceRun to false for Worker Pool [#pool.getName()#]." );
+					return true;
+				}
+
+				return pool.getCurrentExecutorCount() > 0 &&
+					pool.getExecutor().getActiveCount() < pool.getCurrentExecutorCount();
 			} );
 		variables.log.debug( "Starting DB Task for Worker Pool [#arguments.pool.getName()#]" );
 	}
@@ -158,10 +190,6 @@ component accessors="true" extends="AbstractQueueProvider" {
 				variables.log.debug( "All DB workers stopped. Disabling the DB Task." );
 			}
 		};
-	}
-
-	private void function beforeJobRun( required AbstractJob job ) {
-		markJobAsReserved( arguments.job );
 	}
 
 	private void function markJobAsReserved( required AbstractJob job ) {

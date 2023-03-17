@@ -95,7 +95,11 @@ component accessors="true" {
 		return variables.javaInstant.now().getEpochSecond() + arguments.delay;
 	}
 
-	private void function marshalJob( required AbstractJob job, required WorkerPool pool ) {
+	private void function marshalJob(
+		required AbstractJob job,
+		required WorkerPool pool,
+		function afterJobHook
+	) {
 		variables.async
 			.newFuture( function() {
 				if ( variables.log.canDebug() ) {
@@ -130,6 +134,10 @@ component accessors="true" {
 
 				dispatchNextJobInChain( job );
 				ensureSuccessfulBatchJobIsRecorded( job );
+
+				if ( !isNull( afterJobHook ) && ( isCustomFunction( afterJobHook ) || isClosure( afterJobHook ) ) ) {
+					afterJobHook( job );
+				}
 			} )
 			.onException( function( e ) {
 				// log failed job
@@ -162,6 +170,10 @@ component accessors="true" {
 					ensureFailedBatchJobIsRecorded( job, e );
 
 					variables.log.debug( "Deleted job ###job.getId()# after maximum failed attempts." );
+				}
+
+				if ( !isNull( afterJobHook ) && ( isCustomFunction( afterJobHook ) || isClosure( afterJobHook ) ) ) {
+					afterJobHook( job );
 				}
 			} );
 	}
