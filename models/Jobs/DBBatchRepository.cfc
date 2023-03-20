@@ -67,17 +67,20 @@ component singleton accessors="true" {
 	public void function delete( required string id ) {
 		qb.table( variables.batchTableName )
 			.where( "id", arguments.id )
-			.delete();
+			.delete( options = variables.defaultQueryOptions );
 	}
 
 	public void function incrementTotalJobs( required string id, required numeric count ) {
 		qb.table( variables.batchTableName )
 			.where( "id", arguments.id )
-			.update( {
-				"totalJobs" : qb.raw( "totalJobs + #count#" ),
-				"pendingJobs" : qb.raw( "pendingJobs + #count#" ),
-				"completedDate" : { "value" : 0, "null" : true }
-			} );
+			.update(
+				values = {
+					"totalJobs" : qb.raw( "totalJobs + #count#" ),
+					"pendingJobs" : qb.raw( "pendingJobs + #count#" ),
+					"completedDate" : { "value" : 0, "null" : true }
+				},
+				options = variables.defaultQueryOptions
+			);
 	}
 
 	public struct function decrementPendingJobs( required string batchId, required any jobId ) {
@@ -94,13 +97,16 @@ component singleton accessors="true" {
 
 			qb.table( variables.batchTableName )
 				.where( "id", arguments.batchId )
-				.update( {
-					"pendingJobs" : data.pendingJobs - 1,
-					"failedJobs" : data.failedJobs,
-					"failedJobIds" : serializeJSON(
-						deserializeJSON( data.failedJobIds ).filter( ( failedJobId ) => failedJobId != jobId )
-					)
-				} );
+				.update(
+					values = {
+						"pendingJobs" : data.pendingJobs - 1,
+						"failedJobs" : data.failedJobs,
+						"failedJobIds" : serializeJSON(
+							deserializeJSON( data.failedJobIds ).filter( ( failedJobId ) => failedJobId != jobId )
+						)
+					},
+					options = variables.defaultQueryOptions
+				);
 
 			return {
 				"pendingJobs" : data.pendingJobs - 1,
@@ -124,11 +130,14 @@ component singleton accessors="true" {
 
 			qb.table( variables.batchTableName )
 				.where( "id", arguments.batchId )
-				.update( {
-					"pendingJobs" : data.pendingJobs,
-					"failedJobs" : data.failedJobs + 1,
-					"failedJobIds" : serializeJSON( deserializeJSON( data.failedJobIds ).append( arguments.jobId ) )
-				} );
+				.update(
+					values = {
+						"pendingJobs" : data.pendingJobs,
+						"failedJobs" : data.failedJobs + 1,
+						"failedJobIds" : serializeJSON( deserializeJSON( data.failedJobIds ).append( arguments.jobId ) )
+					},
+					options = variables.defaultQueryOptions
+				);
 
 			return {
 				"pendingJobs" : data.pendingJobs,
@@ -141,16 +150,22 @@ component singleton accessors="true" {
 	public void function markAsFinished( required string id ) {
 		qb.table( variables.batchTableName )
 			.where( "id", arguments.id )
-			.update( { "completedDate" : getCurrentUnixTimestamp() } );
+			.update(
+				values = { "completedDate" : getCurrentUnixTimestamp() },
+				options = variables.defaultQueryOptions
+			);
 	}
 
 	public void function cancel( required string id ) {
 		qb.table( variables.batchTableName )
 			.where( "id", arguments.id )
-			.update( {
-				"cancelledDate" : getCurrentUnixTimestamp(),
-				"completedDate" : getCurrentUnixTimestamp()
-			} );
+			.update(
+				values = {
+					"cancelledDate" : getCurrentUnixTimestamp(),
+					"completedDate" : getCurrentUnixTimestamp()
+				},
+				options = variables.defaultQueryOptions
+			);
 	}
 
 	public Batch function toBatch( required struct data ) {
