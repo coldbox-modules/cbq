@@ -105,12 +105,15 @@ component accessors="true" extends="AbstractQueueProvider" {
 				}
 			} )
 			.when( function() {
-				variables.log.debug( "Checking if we should fetch new database jobs for Worker Pool [#pool.getName()#].", {
-					"currentExecutorCount": pool.getCurrentExecutorCount(),
-					"activeCount": pool.getExecutor().getActiveCount(),
-					"willRun": pool.getCurrentExecutorCount() > 0 && pool.getExecutor().getActiveCount() < pool.getCurrentExecutorCount(),
-					"forceRun": forceRun
-				} );
+				variables.log.debug(
+					"Checking if we should fetch new database jobs for Worker Pool [#pool.getName()#].",
+					{
+						"currentExecutorCount" : pool.getCurrentExecutorCount(),
+						"activeCount" : pool.getExecutor().getActiveCount(),
+						"willRun" : pool.getCurrentExecutorCount() > 0 && pool.getExecutor().getActiveCount() < pool.getCurrentExecutorCount(),
+						"forceRun" : forceRun
+					}
+				);
 
 				if ( forceRun ) {
 					variables.log.debug( "forceRun is true so we will fetch new database jobs and reset forceRun to false for Worker Pool [#pool.getName()#]." );
@@ -118,7 +121,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 				}
 
 				return pool.getCurrentExecutorCount() > 0 &&
-					pool.getExecutor().getActiveCount() < pool.getCurrentExecutorCount();
+				pool.getExecutor().getActiveCount() < pool.getCurrentExecutorCount();
 			} );
 		variables.log.debug( "Starting DB Task for Worker Pool [#arguments.pool.getName()#]" );
 	}

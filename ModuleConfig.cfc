@@ -10,9 +10,13 @@ component {
 			"configPath" : "config.cbq",
 			"registerWorkers" : getSystemSetting( "CBQ_REGISTER_WORKERS", true ),
 			"scaleInterval" : 0,
-			"defaultWorkerBackoff": 0,
-			"defaultWorkerTimeout": 60
-			"defaultWorkerMaxAttempts": 1
+			"defaultWorkerBackoff" : 0,
+			"defaultWorkerTimeout" : 60,
+			"defaultWorkerMaxAttempts" : 1,
+			"batchRepositoryProperties" : {
+				"tableName" : "cbq_batches",
+				"queryOptions" : {}
+			}
 		};
 	}
 

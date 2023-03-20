@@ -3,15 +3,21 @@ component singleton accessors="true" {
 	property name="javaInstant" inject="java:java.time.Instant";
 	property name="qb" inject="provider:QueryBuilder@qb";
 
-	property name="properties" type="struct";
+	property
+		name="properties"
+		type="struct"
+		inject="coldbox:moduleSettings:cbq:batchRepositoryProperties";
 	property name="defaultQueryOptions" type="struct";
 	property name="batchTableName" default="cbq_batches";
 
 	public DBBatchRepository function init() {
 		variables.timeBasedUUIDGenerator = createObject( "java", "com.fasterxml.uuid.Generators" ).timeBasedGenerator();
-		variables.properties = {};
 		variables.defaultQueryOptions = {};
 		return this;
+	}
+
+	function onDIComplete() {
+		setProperties( variables.properties );
 	}
 
 	public DBBatchRepository function setProperties( required struct properties ) {
