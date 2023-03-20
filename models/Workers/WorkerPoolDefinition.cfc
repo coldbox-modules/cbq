@@ -30,17 +30,17 @@ component accessors="true" {
 	/**
 	 * The time to wait between retrying jobs, in seconds.
 	 */
-	property name="backoff" default="0";
+	property name="backoff" inject="coldbox:moduleSettings:cbq:defaultWorkerBackoff";
 
 	/**
 	 * The maximum amount of time a job can run before a TimeoutException is thrown, in seconds.
 	 */
-	property name="timeout" default="60";
+	property name="timeout" inject="coldbox:moduleSettings:cbq:defaultWorkerTimeout";
 
 	/**
 	 * The maximum number of attempts made before a job is marked as failed.
 	 */
-	property name="maxAttempts" default="1";
+	property name="maxAttempts" inject="coldbox:moduleSettings:cbq:defaultWorkerMaxAttempts";
 
 	/**
 	 * Creates a new WorkerPoolDefinition.
