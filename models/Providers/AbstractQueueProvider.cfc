@@ -164,6 +164,10 @@ component accessors="true" {
 				} else {
 					variables.log.debug( "Maximum attempts reached. Deleting job ###job.getId()#" );
 
+					if ( structKeyExists( job, "onFailure" ) ) {
+						invoke( job, "onFailure", { "excpetion": e } );
+					}
+
 					variables.interceptorService.announce( "onCBQJobFailed", { "job" : job, "exception" : e } );
 
 					afterJobFailed( job.getId(), job );
