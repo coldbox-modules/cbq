@@ -3,6 +3,7 @@ component accessors="true" {
 	property name="dispatcher" inject="provider:Dispatcher@cbq";
 	property name="mapping" inject="wirebox:targetID";
 	property name="log" inject="logbox:logger:{this}";
+	property name="cbq" inject="provider:cbq@cbq";
 	property name="wirebox" inject="wirebox";
 	property name="str" inject="Str@Str";
 
