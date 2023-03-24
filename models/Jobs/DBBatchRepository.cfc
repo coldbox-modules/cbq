@@ -150,10 +150,7 @@ component singleton accessors="true" {
 	public void function markAsFinished( required string id ) {
 		qb.table( variables.batchTableName )
 			.where( "id", arguments.id )
-			.update(
-				values = { "completedDate" : getCurrentUnixTimestamp() },
-				options = variables.defaultQueryOptions
-			);
+			.update( values = { "completedDate" : getCurrentUnixTimestamp() }, options = variables.defaultQueryOptions );
 	}
 
 	public void function cancel( required string id ) {
