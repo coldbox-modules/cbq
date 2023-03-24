@@ -92,7 +92,7 @@ component {
         newConnection( "default" )
             .setProvider( "SyncProvider@cbq" );
 
-		newWorkerPool( "default" );
+		newWorkerPool( "default", "default" );
     }
 
 }
@@ -116,7 +116,7 @@ New `Worker Pool`s are created using the `newWorkerPool` function. It is a build
 All of the setters are optional.
 
 ```cfc
-newWorkerPool( connectionName )
+newWorkerPool( name, connectionName )
     .quantity( numberOfWorkers )
     .onQueue( name = "default" )
     .backoff( backoffTimeInSeconds )
@@ -134,7 +134,7 @@ component {
 		newConnection( "default" )
 			.setProvider( "DBProvider@cbq" );
 
-		newWorkerPool( "default" )
+		newWorkerPool( "default", "default" )
 			.setTimeout( 5 )
 			.setMaxAttempts( 5 )
 			.setQuantity( 3 );
