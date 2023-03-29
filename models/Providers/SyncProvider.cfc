@@ -109,7 +109,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 
 				variables.log.debug( "Deleted job ###job.getId()# after maximum failed attempts." );
 
-				throw( e );
+				rethrow;
 			}
 		}
 	}
