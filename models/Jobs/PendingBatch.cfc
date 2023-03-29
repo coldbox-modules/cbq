@@ -103,9 +103,9 @@ component accessors="true" extends="AbstractJob" {
 
 	public struct function getOptions() {
 		return {
-			"thenJob" : getThenJob().getMemento() ?: javacast( "null", "" ),
-			"catchJob" : getCatchJob().getMemento() ?: javacast( "null", "" ),
-			"finallyJob" : getFinallyJob().getMemento() ?: javacast( "null", "" ),
+			"thenJob" : getThenJob()?.getMemento() ?: javacast( "null", "" ),
+			"catchJob" : getCatchJob()?.getMemento() ?: javacast( "null", "" ),
+			"finallyJob" : getFinallyJob()?.getMemento() ?: javacast( "null", "" ),
 			"allowFailures" : getAllowFailures(),
 			"connection" : getConnection(),
 			"queue" : getQueue()
