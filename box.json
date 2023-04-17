@@ -20,13 +20,15 @@
     },
     "devDependencies":{
         "testbox":"stable",
-        "coldbox":"stable"
+        "coldbox":"stable",
+        "cfmigrations":"^4.0.0"
     },
     "installPaths":{
         "testbox":"testbox/",
         "coldbox":"tests/resources/app/coldbox/",
         "qb":"modules/qb/",
-        "str":"modules/str/"
+        "str":"modules/str/",
+        "cfmigrations":"modules/cfmigrations/"
     },
     "scripts":{
         "format":"cfformat run ModuleConfig.cfc,models/**/*.cfc,tests/specs/**/*.cfc,tests/resources/app/handlers/**/*.cfc,tests/resources/app/config/**/*.cfc --overwrite",
