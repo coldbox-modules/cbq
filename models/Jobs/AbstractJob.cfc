@@ -15,6 +15,15 @@ component accessors="true" {
 	property name="maxAttempts";
 	property name="currentAttempt";
 	property name="chained" type="array";
+	property name="batchId" type="string";
+	property
+		name="isReleased"
+		type="boolean"
+		default="false";
+	property
+		name="isLifecycleJob"
+		type="boolean"
+		default="false";
 
 	property name="properties";
 
@@ -93,6 +102,29 @@ component accessors="true" {
 		throw( "No method [#missingMethodName#] found on [#variables.mapping#]" );
 	}
 
+	public boolean function isBatchJob() {
+		return !isNull( variables.batchId );
+	}
+
+	public AbstractJob function withBatchId( required string id ) {
+		variables.batchId = arguments.id;
+		return this;
+	}
+
+	public Batch function getBatch() {
+		if ( !isBatchJob() ) {
+			throw(
+				type = "cbq.MissingBatchId",
+				message = "Cannot fetch a Batch without a batchId. If needed, you can check if a job is a Batch job using the `isBatchJob()` method."
+			);
+		}
+
+		return getRepository().find( variables.batchId );
+	}
+
+	public any function getRepository() provider="DBBatchRepository@cbq" {
+	}
+
 	public struct function getMemento() {
 		return {
 			"id" : this.getId(),
@@ -104,7 +136,9 @@ component accessors="true" {
 			"timeout" : this.getTimeout(),
 			"maxAttempts" : this.getMaxAttempts(),
 			"currentAttempt" : this.getCurrentAttempt(),
-			"chained" : this.getChained()
+			"chained" : this.getChained(),
+			"batchId" : isBatchJob() ? this.getBatchId() : javacast( "null", "" ),
+			"isLifecycleJob" : this.getIsLifecycleJob()
 		};
 	}
 

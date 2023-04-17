@@ -292,7 +292,7 @@ component accessors="true" {
 	}
 
 	private void function ensureSuccessfulBatchJobIsRecorded( required AbstractJob job ) {
-		if ( !structKeyExists( arguments.job, "getBatch" ) ) {
+		if ( !arguments.job.isBatchJob() ) {
 			return;
 		}
 
@@ -304,7 +304,7 @@ component accessors="true" {
 	}
 
 	private void function ensureFailedBatchJobIsRecorded( required AbstractJob job, required any error ) {
-		if ( !structKeyExists( arguments.job, "getBatch" ) ) {
+		if ( !arguments.job.isBatchJob() ) {
 			return;
 		}
 
