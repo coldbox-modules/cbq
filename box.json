@@ -19,7 +19,7 @@
         "str":"^3.0.1"
     },
     "devDependencies":{
-        "testbox":"stable",
+        "testbox":"be",
         "coldbox":"stable",
         "cfmigrations":"^4.0.0"
     },
