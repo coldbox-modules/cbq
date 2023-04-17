@@ -17,11 +17,26 @@ component accessors="true" extends="AbstractJob" {
 		return this;
 	}
 
+	/**
+	 * Adds a single Job or an array of Jobs to a PendingBatch.
+	 *
+	 * @job         The Job WireBox id, Job instance, or array of Job instances to add to the PendingBatch.
+	 * @properties  A struct of properties for the Job instance. (Only used when providing a Job WireBox id.)
+	 * @chain       An array of Jobs to chain after this Job. (Only used when providing a Job WireBox id.)
+	 * @queue       The queue the Job belongs to. (Only used when providing a Job WireBox id.)
+	 * @connection  The Connection to dispatch the Job on. (Only used when providing a Job WireBox id.)
+	 * @backoff     The amount of time, in seconds, to wait between attempting Jobs. (Only used when providing a Job WireBox id.)
+	 * @timeout     The amount of time, in seconds, to wait before treating a Job as erroring. (Only used when providing a Job WireBox id.)
+	 * @maxAttempts The maximum amount of attempts of a Job before treating the Job as failed. (Only used when providing a Job WireBox id.)
+	 *
+	 * @return      The PendingBatch instance.
+	 */
 	public PendingBatch function add(
 		required any job,
 		struct properties = {},
 		array chain = [],
 		string queue,
+		string connection,
 		numeric backoff,
 		numeric timeout,
 		numeric maxAttempts
@@ -37,11 +52,26 @@ component accessors="true" extends="AbstractJob" {
 		return this;
 	}
 
+	/**
+	 * Defines a Job to be dispatched when all the jobs in the batch finishes successfully.
+	 *
+	 * @job         The Job WireBox id or Job instance to execute if all the jobs in the Batch complete successfully.
+	 * @properties  A struct of properties for the Job instance. (Only used when providing a Job WireBox id.)
+	 * @chain       An array of Jobs to chain after this Job. (Only used when providing a Job WireBox id.)
+	 * @queue       The queue the Job belongs to. (Only used when providing a Job WireBox id.)
+	 * @connection  The Connection to dispatch the Job on. (Only used when providing a Job WireBox id.)
+	 * @backoff     The amount of time, in seconds, to wait between attempting Jobs. (Only used when providing a Job WireBox id.)
+	 * @timeout     The amount of time, in seconds, to wait before treating a Job as erroring. (Only used when providing a Job WireBox id.)
+	 * @maxAttempts The maximum amount of attempts of a Job before treating the Job as failed. (Only used when providing a Job WireBox id.)
+	 *
+	 * @return      The PendingBatch instance.
+	 */
 	public PendingBatch function then(
 		required any job,
 		struct properties = {},
 		array chain = [],
 		string queue,
+		string connection,
 		numeric backoff,
 		numeric timeout,
 		numeric maxAttempts
@@ -54,11 +84,26 @@ component accessors="true" extends="AbstractJob" {
 		return this;
 	}
 
+	/**
+	 * Defines a Job to be dispatched the first time a job in the Batch fails.
+	 *
+	 * @job         The Job WireBox id or Job instance to execute the first time a job in the Batch fails.
+	 * @properties  A struct of properties for the Job instance. (Only used when providing a Job WireBox id.)
+	 * @chain       An array of Jobs to chain after this Job. (Only used when providing a Job WireBox id.)
+	 * @queue       The queue the Job belongs to. (Only used when providing a Job WireBox id.)
+	 * @connection  The Connection to dispatch the Job on. (Only used when providing a Job WireBox id.)
+	 * @backoff     The amount of time, in seconds, to wait between attempting Jobs. (Only used when providing a Job WireBox id.)
+	 * @timeout     The amount of time, in seconds, to wait before treating a Job as erroring. (Only used when providing a Job WireBox id.)
+	 * @maxAttempts The maximum amount of attempts of a Job before treating the Job as failed. (Only used when providing a Job WireBox id.)
+	 *
+	 * @return      The PendingBatch instance.
+	 */
 	public PendingBatch function catch(
 		required any job,
 		struct properties = {},
 		array chain = [],
 		string queue,
+		string connection,
 		numeric backoff,
 		numeric timeout,
 		numeric maxAttempts
@@ -71,6 +116,20 @@ component accessors="true" extends="AbstractJob" {
 		return this;
 	}
 
+	/**
+	 * Defines a Job to be dispatched after all the jobs in the Batch have executed successfully or failed.
+	 *
+	 * @job         The Job WireBox id or Job instance to execute after all the jobs in the Batch have executed successfully or failed.
+	 * @properties  A struct of properties for the Job instance. (Only used when providing a Job WireBox id.)
+	 * @chain       An array of Jobs to chain after this Job. (Only used when providing a Job WireBox id.)
+	 * @queue       The queue the Job belongs to. (Only used when providing a Job WireBox id.)
+	 * @connection  The Connection to dispatch the Job on. (Only used when providing a Job WireBox id.)
+	 * @backoff     The amount of time, in seconds, to wait between attempting Jobs. (Only used when providing a Job WireBox id.)
+	 * @timeout     The amount of time, in seconds, to wait before treating a Job as erroring. (Only used when providing a Job WireBox id.)
+	 * @maxAttempts The maximum amount of attempts of a Job before treating the Job as failed. (Only used when providing a Job WireBox id.)
+	 *
+	 * @return      The PendingBatch instance.
+	 */
 	public PendingBatch function finally(
 		required any job,
 		struct properties = {},
@@ -88,6 +147,11 @@ component accessors="true" extends="AbstractJob" {
 		return this;
 	}
 
+	/**
+	 * Dispatches a PendingBatch and all the Jobs it contains.
+	 *
+	 * @return A Batch instance created from this PendingBatch.
+	 */
 	public Batch function dispatch() {
 		try {
 			var batch = getRepository().store( this );

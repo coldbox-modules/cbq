@@ -147,12 +147,23 @@ component singleton accessors="true" {
 		}
 	}
 
+	/**
+	 * TODO: completing a batch doesn't do anything to jobs added after the batch was marked as completed
+	 * There should be some sort of exception thrown or something when adding jobs to a completed or cancelled batch.
+	 *
+	 * @id
+	 */
 	public void function markAsFinished( required string id ) {
 		qb.table( variables.batchTableName )
 			.where( "id", arguments.id )
 			.update( values = { "completedDate" : getCurrentUnixTimestamp() }, options = variables.defaultQueryOptions );
 	}
 
+	/**
+	 * TODO: cancelling a batch doesn't do anything to the jobs on the batch or the lifecycle methods
+	 *
+	 * @id
+	 */
 	public void function cancel( required string id ) {
 		qb.table( variables.batchTableName )
 			.where( "id", arguments.id )

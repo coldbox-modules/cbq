@@ -106,7 +106,7 @@ component singleton accessors="true" {
 	 *
 	 * @return  The PendingBatch to be dispatched.
 	 */
-	public PendingBatch function batch( required array jobs ) {
+	public PendingBatch function batch( array jobs = [] ) {
 		var batch = variables.wirebox.getInstance( "PendingBatch@cbq" );
 		batch.add( jobs );
 		return batch;
