@@ -14,8 +14,18 @@ on:
 
 jobs:
   tests:
-    runs-on: ubuntu-latest
     name: Tests
+    runs-on: ubuntu-latest
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_DATABASE: cbq
+      DB_SCHEMA: cbq
+      DB_USER: root
+      DB_PASSWORD: root
+      DB_CLASS: com.mysql.cj.jdbc.Driver
+      DB_BUNDLENAME: com.mysql.cj
+      DB_BUNDLEVERSION: 8.0.19
     strategy:
       fail-fast: false
       matrix:
@@ -23,15 +33,24 @@ jobs:
         coldbox: ["coldbox@6"]
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3.2.0
 
-      - name: Setup Java JDK
-        uses: actions/setup-java@v1.4.3
+      - name: Setup Java
+        uses: actions/setup-java@v3.9.0
         with:
-          java-version: 11
+          distribution: "temurin"
+          java-version: "11"
 
-      - name: Set Up CommandBox
-        uses: elpete/setup-commandbox@v1.0.0
+      - name: Setup Database and Fixtures
+        run: |
+          sudo systemctl start mysql.service
+          # Create Database
+          mysql -u${{ env.DB_USER }} -p${{ env.DB_PASSWORD }} -e 'CREATE DATABASE ${{ env.DB_DATABASE }} CHARACTER SET utf8 COLLATE utf8_unicode_ci;'
+
+      - name: Setup CommandBox CLI
+        uses: Ortus-Solutions/setup-commandbox@main
+        with:
+          version: 5.7.0
 
       - name: Install dependencies
         run: |
@@ -54,18 +73,19 @@ jobs:
     name: Format
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3.2.0
 
-      - name: Setup Java JDK
-        uses: actions/setup-java@v1.4.3
+      - name: Setup Java
+        uses: actions/setup-java@v3.9.0
         with:
-          java-version: 11
+          distribution: "temurin"
+          java-version: "11"
 
-      - name: Set Up CommandBox
-        uses: elpete/setup-commandbox@v1.0.0
-
-      - name: Install CFFormat
-        run: box install commandbox-cfformat
+      - name: Setup CommandBox CLI
+        uses: Ortus-Solutions/setup-commandbox@main
+        with:
+          version: 5.7.0
+          install: commandbox-cfformat
 
       - name: Run CFFormat
         run: box run-script format
