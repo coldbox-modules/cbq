@@ -44,6 +44,7 @@ jobs:
         uses: Ortus-Solutions/setup-commandbox@main
         with:
           version: 5.7.0
+          install: commandbox-cfconfig
 
       - name: Install dependencies
         run: |
