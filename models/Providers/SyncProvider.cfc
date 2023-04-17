@@ -53,11 +53,16 @@ component accessors="true" extends="AbstractQueueProvider" {
 			if ( job.getIsReleased() ) {
 				variables.log.debug( "Job [#job.getId()#] requested manual release." );
 
-				if ( job.getCurrentAttempt() >= getMaxAttemptsForJob( job, pool ) ) {
+				var jobMaxAttempts = getMaxAttemptsForJob( job, arguments.pool );
+				if ( jobMaxAttempts != 0 && job.getCurrentAttempt() >= getMaxAttemptsForJob( job, pool ) ) {
 					throw(
 						type = "cbq.MaxAttemptsReached",
 						message = "Job [#job.getId()#] requested manual release, but has reached its maximum attempts [#job.getCurrentAttempt()#]."
 					);
+				}
+
+				if ( jobMaxAttempts == 0 ) {
+					variables.log.debug( "Job ###job.getId()# has a maxAttempts of 0 and will always be released." );
 				}
 
 				variables.log.debug( "Releasing job ###job.getId()#" );
@@ -108,7 +113,11 @@ component accessors="true" extends="AbstractQueueProvider" {
 
 			variables.interceptorService.announce( "onCBQJobException", { "job" : job, "exception" : e } );
 
-			if ( job.getCurrentAttempt() < getMaxAttemptsForJob( job, arguments.pool ) ) {
+			var jobMaxAttempts = getMaxAttemptsForJob( job, arguments.pool );
+			if ( jobMaxAttempts == 0 || job.getCurrentAttempt() < jobMaxAttempts ) {
+				if ( jobMaxAttempts == 0 ) {
+					variables.log.debug( "Job ###job.getId()# has a maxAttempts of 0 and will always be released." );
+				}
 				variables.log.debug( "Releasing job ###job.getId()#" );
 				releaseJob( job );
 				variables.log.debug( "Released job ###job.getId()#" );

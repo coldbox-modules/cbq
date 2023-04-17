@@ -56,6 +56,28 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
                 expect( job ).toHaveKey( "onFailureCalled" );
                 expect( job.onFailureCalled ).toBeTrue( "onFailure should have been called on the job" );
             } );
+
+            it( "will always release a job with a maxAttempts of 0 regardless of the currentAttempt count", function() {
+                var provider = getProvider();
+                $spy( provider, "releaseJob" );
+                var workerPool = makeWorkerPool( provider );
+                var job = getInstance( "ReleaseTestJob" )
+                    .setCurrentAttempt( 1000000 ) // one million
+                    .setId( randRange( 1, 1000 ) )
+                    .setMaxAttempts( 0 );
+
+                // work the job
+                var jobFuture = provider.marshalJob( job, workerPool );
+                // if it is an async operation, wait for it to finish
+                if ( !isNull( jobFuture ) ) {
+                    jobFuture.get();
+                }
+
+                // inspect the spy
+                expect( provider.$once( "releaseJob" ) ).toBeTrue( "releaseJob should have been called on the provider" );
+                var callLog = provider.$callLog()[ "releaseJob" ][ 1 ];
+                expect( provider.getBackoffForJob( callLog[ 1 ], callLog[ 2 ] ) ).toBe( 2, "The delay [2] should have been passed to the provider" );
+            } );
         } );
     }
 
