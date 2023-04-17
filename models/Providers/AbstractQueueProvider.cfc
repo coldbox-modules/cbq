@@ -95,12 +95,12 @@ component accessors="true" {
 		return variables.javaInstant.now().getEpochSecond() + arguments.delay;
 	}
 
-	private void function marshalJob(
+	public any function marshalJob(
 		required AbstractJob job,
 		required WorkerPool pool,
 		function afterJobHook
 	) {
-		variables.async
+		return variables.async
 			.newFuture( function() {
 				if ( variables.log.canDebug() ) {
 					variables.log.debug( "Marshaling job ###job.getId()#", job.getMemento() );
@@ -118,6 +118,22 @@ component accessors="true" {
 			}, arguments.pool.getExecutor() )
 			.orTimeout( getTimeoutForJob( arguments.job, arguments.pool ), "seconds" )
 			.then( function( result ) {
+				if ( job.getIsReleased() ) {
+					variables.log.debug( "Job [#job.getId()#] requested manual release." );
+
+					if ( job.getCurrentAttempt() >= getMaxAttemptsForJob( job, pool ) ) {
+						throw(
+							type = "cbq.MaxAttemptsReached",
+							message = "Job [#job.getId()#] requested manual release, but has reached its maximum attempts [#job.getCurrentAttempt()#]."
+						);
+					}
+
+					variables.log.debug( "Releasing job ###job.getId()#" );
+					releaseJob( job, pool );
+					variables.log.debug( "Released job ###job.getId()#" );
+					return;
+				}
+
 				if ( variables.log.canDebug() ) {
 					variables.log.debug( "Job ###job.getId()# completed successfully." );
 				}
@@ -195,7 +211,7 @@ component accessors="true" {
 	private void function afterJobFailed( required any id, AbstractJob job ) {
 	}
 
-	private void function releaseJob( required AbstractJob job, required WorkerPool pool ) {
+	public void function releaseJob( required AbstractJob job, required WorkerPool pool ) {
 		push(
 			getQueueForJob( arguments.job, arguments.pool ),
 			serializeJSON( job.getMemento() ),
@@ -216,7 +232,7 @@ component accessors="true" {
 		return "default";
 	}
 
-	private numeric function getBackoffForJob( required AbstractJob job, required WorkerPool pool ) {
+	public numeric function getBackoffForJob( required AbstractJob job, required WorkerPool pool ) {
 		if ( !isNull( arguments.job.getBackoff() ) ) {
 			return arguments.job.getBackoff();
 		}

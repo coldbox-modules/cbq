@@ -239,7 +239,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 		}
 	}
 
-	private void function releaseJob( required AbstractJob job, required WorkerPool pool ) {
+	public void function releaseJob( required AbstractJob job, required WorkerPool pool ) {
 		transaction {
 			if (
 				!newQuery()

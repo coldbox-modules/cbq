@@ -34,21 +34,37 @@ component accessors="true" extends="AbstractQueueProvider" {
 		return this;
 	}
 
-	private void function marshalJob( required AbstractJob job, required WorkerPool pool ) {
+	public void function marshalJob( required AbstractJob job, required WorkerPool pool ) {
 		try {
 			if ( variables.log.canDebug() ) {
-				variables.log.debug( "Marshaling job ###job.getId()#", job.getMemento() );
+				variables.log.debug( "Marshaling job ###arguments.job.getId()#", arguments.job.getMemento() );
 			}
 
-			beforeJobRun( job );
+			beforeJobRun( arguments.job );
 
-			variables.interceptorService.announce( "onCBQJobMarshalled", { "job" : job } );
+			variables.interceptorService.announce( "onCBQJobMarshalled", { "job" : arguments.job } );
 
 			if ( variables.log.canDebug() ) {
-				variables.log.debug( "Running job ###job.getId()#", job.getMemento() );
+				variables.log.debug( "Running job ###arguments.job.getId()#", arguments.job.getMemento() );
 			}
 
-			var result = job.handle();
+			var result = arguments.job.handle();
+
+			if ( job.getIsReleased() ) {
+				variables.log.debug( "Job [#job.getId()#] requested manual release." );
+
+				if ( job.getCurrentAttempt() >= getMaxAttemptsForJob( job, pool ) ) {
+					throw(
+						type = "cbq.MaxAttemptsReached",
+						message = "Job [#job.getId()#] requested manual release, but has reached its maximum attempts [#job.getCurrentAttempt()#]."
+					);
+				}
+
+				variables.log.debug( "Releasing job ###job.getId()#" );
+				releaseJob( job, pool );
+				variables.log.debug( "Released job ###job.getId()#" );
+				return;
+			}
 
 			if ( variables.log.canDebug() ) {
 				variables.log.debug( "Job ###job.getId()# completed successfully." );
@@ -80,10 +96,6 @@ component accessors="true" extends="AbstractQueueProvider" {
 			nextJob.dispatch();
 		} catch ( any e ) {
 			// log failed job
-			if ( "java.util.concurrent.CompletionException" == e.getClass().getName() ) {
-				e = e.getCause();
-			}
-
 			if ( log.canError() ) {
 				log.error(
 					"Exception when running job: #e.message#",
@@ -102,6 +114,14 @@ component accessors="true" extends="AbstractQueueProvider" {
 				variables.log.debug( "Released job ###job.getId()#" );
 			} else {
 				variables.log.debug( "Maximum attempts reached. Deleting job ###job.getId()#" );
+
+				if ( structKeyExists( job, "onFailure" ) ) {
+					invoke(
+						job,
+						"onFailure",
+						{ "excpetion" : e }
+					);
+				}
 
 				variables.interceptorService.announce( "onCBQJobFailed", { "job" : job, "exception" : e } );
 

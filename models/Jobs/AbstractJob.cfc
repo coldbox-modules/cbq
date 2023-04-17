@@ -69,6 +69,12 @@ component accessors="true" {
 		return this;
 	}
 
+	public AbstractJob function release( numeric backoff = 0 ) {
+		variables.isReleased = true;
+		setBackoff( arguments.backoff );
+		return this;
+	}
+
 	public any function getInstance() {
 		return variables.wirebox.getInstance( argumentCollection = arguments );
 	}
