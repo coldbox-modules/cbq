@@ -85,20 +85,8 @@ component accessors="true" extends="AbstractQueueProvider" {
 
 			afterJobRun( job );
 
-			var chain = job.getChained();
-			if ( chain.isEmpty() ) {
-				return;
-			}
-
-			var nextJobConfig = chain[ 1 ];
-			var nextJob = variables.cbq.job( nextJobConfig.mapping );
-			nextJob.applyMemento( nextJobConfig );
-
-			if ( chain.len() >= 2 ) {
-				nextJob.setChained( chain.slice( 2 ) );
-			}
-
-			nextJob.dispatch();
+			ensureSuccessfulBatchJobIsRecorded( job );
+			dispatchNextJobInChain( job );
 		} catch ( any e ) {
 			// log failed job
 			if ( log.canError() ) {
@@ -135,6 +123,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 				variables.interceptorService.announce( "onCBQJobFailed", { "job" : job, "exception" : e } );
 
 				afterJobFailed( job.getId(), job );
+				ensureFailedBatchJobIsRecorded( job );
 
 				variables.log.debug( "Deleted job ###job.getId()# after maximum failed attempts." );
 

@@ -153,8 +153,8 @@ component accessors="true" {
 
 				afterJobRun( job );
 
-				dispatchNextJobInChain( job );
 				ensureSuccessfulBatchJobIsRecorded( job );
+				dispatchNextJobInChain( job );
 
 				if ( !isNull( afterJobHook ) && ( isCustomFunction( afterJobHook ) || isClosure( afterJobHook ) ) ) {
 					afterJobHook( job );
