@@ -135,6 +135,7 @@ component accessors="true" extends="AbstractJob" {
 		struct properties = {},
 		array chain = [],
 		string queue,
+		string connection,
 		numeric backoff,
 		numeric timeout,
 		numeric maxAttempts
