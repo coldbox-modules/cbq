@@ -8,6 +8,11 @@ component {
 	function configure() {
 		settings = {
 			"configPath" : "config.cbq",
+			"logFailedJobs" : {
+				"enabled" : false,
+				"tableName" : "cbq_failed_jobs",
+				"queryOptions" : {}
+			},
 			"registerWorkers" : getSystemSetting( "CBQ_REGISTER_WORKERS", true ),
 			"scaleInterval" : 0,
 			"defaultWorkerBackoff" : 0,
@@ -18,6 +23,11 @@ component {
 				"queryOptions" : {}
 			}
 		};
+
+		interceptorSettings = {
+			"customInterceptionPoints" : "onCBQJobAdded,onCBQJobMarshalled,onCBQJobComplete,onCBQJobException,onCBQJobFailed"
+		};
+		interceptors = [ { "class" : "#moduleMapping#.interceptors.LogFailedJobsInterceptor" } ];
 	}
 
 	function onLoad() {

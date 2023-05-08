@@ -171,6 +171,10 @@ component accessors="true" {
 			this.setMaxAttempts( arguments.memento.maxAttempts );
 		}
 
+		if ( !isNull( arguments.memento.currentAttempt ) ) {
+			this.setCurrentAttempt( arguments.memento.currentAttempt );
+		}
+
 		if ( !isNull( arguments.memento.chained ) ) {
 			this.setChained( arguments.memento.chained );
 		}

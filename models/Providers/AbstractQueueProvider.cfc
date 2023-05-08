@@ -63,7 +63,7 @@ component accessors="true" {
 	public any function deserializeJob(
 		required string payload,
 		required any jobId,
-		required numeric currentAttempt
+		numeric currentAttempt
 	) {
 		var config = deserializeJSON( arguments.payload );
 
@@ -75,7 +75,9 @@ component accessors="true" {
 		var instance = variables.wirebox.getInstance( config.mapping );
 		instance.applyMemento( config );
 		instance.setId( arguments.jobId );
-		instance.setCurrentAttempt( arguments.currentAttempt );
+		if ( !isNull( arguments.currentAttempt ) ) {
+			instance.setCurrentAttempt( arguments.currentAttempt );
+		}
 
 		if ( config.keyExists( "batchId" ) ) {
 			instance.withBatchId( config.batchId );
