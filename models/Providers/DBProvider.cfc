@@ -9,7 +9,6 @@ component accessors="true" extends="AbstractQueueProvider" {
 
 	variables.uniqueID = createUUID();
 	variables.currentExecutorCount = 0;
-	variables.reservationDurationInSeconds = 60;
 
 	function onDIComplete() {
 		variables.log.debug( "Creating new DB Provider for cbq: #variables.uniqueID#" );

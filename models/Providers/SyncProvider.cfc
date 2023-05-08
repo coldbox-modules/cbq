@@ -123,7 +123,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 				variables.interceptorService.announce( "onCBQJobFailed", { "job" : job, "exception" : e } );
 
 				afterJobFailed( job.getId(), job );
-				ensureFailedBatchJobIsRecorded( job );
+				ensureFailedBatchJobIsRecorded( job, e );
 
 				variables.log.debug( "Deleted job ###job.getId()# after maximum failed attempts." );
 
