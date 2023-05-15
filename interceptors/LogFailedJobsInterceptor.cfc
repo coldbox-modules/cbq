@@ -5,7 +5,7 @@ component {
 	property name="config" inject="provider:Config@cbq";
 
     function onCBQJobFailed( event, data ) {
-        if ( !variables.settings.logFailedJobs.enabled ) {
+        if ( !variables.settings.logFailedJobs ) {
             return;
         }
 
@@ -18,7 +18,13 @@ component {
 			queueName = connection.getDefaultQueue();
 		}
 
-        qb.table( variables.settings.logFailedJobs.tableName )
+		var options = {};
+		structAppend( options, variables.settings.logFailedJobsProperties.queryOptions );
+		if ( variables.settings.logFailedJobsProperties.keyExists( "datasource" ) && ( !isSimpleValue( variables.settings.logFailedJobsProperties.datasource ) || variables.settings.logFailedJobsProperties.datasource != "" ) ) {
+			options[ "datasource" ] = variables.settings.logFailedJobsProperties.datasource;
+		}
+
+        qb.table( variables.settings.logFailedJobsProperties.tableName )
             .insert(
                 values = {
                     "connection": connectionName,
@@ -49,7 +55,7 @@ component {
                     "exception": serializeJSON( arguments.data.exception ),
                     "failedDate": now()
                 },
-                options = variables.settings.logFailedJobs.queryOptions
+                options = options
             );
     }
 

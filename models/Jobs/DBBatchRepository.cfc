@@ -23,8 +23,15 @@ component singleton accessors="true" {
 	public DBBatchRepository function setProperties( required struct properties ) {
 		variables.properties = arguments.properties;
 		variables.batchTableName = variables.properties.keyExists( "tableName" ) ? variables.properties.tableName : "cbq_batches";
-		variables.defaultQueryOptions = variables.properties.keyExists( "queryOptions" ) ? variables.properties.queryOptions : {};
-		if ( variables.properties.keyExists( "datasource" ) ) {
+		variables.defaultQueryOptions = {};
+		if ( variables.properties.keyExists( "queryOptions" ) ) {
+			structAppend( variables.defaultQueryOptions, variables.properties.queryOptions );
+		}
+		if (
+			variables.properties.keyExists( "datasource" ) && (
+				!isSimpleValue( variables.properties.datasource ) || variables.properties.datasource != ""
+			)
+		) {
 			variables.defaultQueryOptions[ "datasource" ] = variables.properties.datasource;
 		}
 		return this;

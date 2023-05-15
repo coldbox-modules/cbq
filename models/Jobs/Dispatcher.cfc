@@ -7,7 +7,6 @@ component singleton accessors="true" {
 		var connectionName = arguments.job.getConnection();
 		param connectionName = variables.config.getDefaultConnectionName();
 		var connection = variables.config.getConnection( connectionName );
-
 		var queueName = arguments.job.getQueue();
 		param queueName = connection.getDefaultQueue();
 

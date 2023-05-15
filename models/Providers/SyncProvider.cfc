@@ -8,7 +8,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 	) {
 		if ( isNull( variables.pool ) ) {
 			if ( variables.log.canWarn() ) {
-				variables.log.warn( "No workers have been defined so this job will not be executed." );
+				variables.log.warn( "No worker pools have been defined so this job will not be executed." );
 			}
 			return;
 		}
