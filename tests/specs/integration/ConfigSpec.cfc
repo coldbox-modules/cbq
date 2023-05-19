@@ -65,7 +65,7 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 					expect( defaultWorkerPool.getConnectionName() ).toBe( "default" );
 					expect( defaultWorkerPool.getConnection().getName() ).toBe( "default" );
 					expect( defaultWorkerPool.getQuantity() ).toBe( 1 );
-					expect( defaultWorkerPool.getQueues() ).toBe( [ "*" ] );
+					expect( defaultWorkerPool.getQueue() ).toBe( "default" );
 					expect( defaultWorkerPool.getBackoff() ).toBe( 0 );
 					expect( defaultWorkerPool.getTimeout() ).toBe( 60 );
 					expect( defaultWorkerPool.getMaxAttempts() ).toBe( 1 );
@@ -95,7 +95,7 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 					var workerPoolDefinition = config.newWorkerPool( name = "default", force = true );
 					workerPoolDefinition.forConnection( "default" );
 					workerPoolDefinition.quantity( 4 );
-					workerPoolDefinition.onQueues( "default" );
+					workerPoolDefinition.onQueue( "emails" );
 					workerPoolDefinition.backoff( 5 );
 					workerPoolDefinition.timeout( 30 );
 					workerPoolDefinition.maxAttempts( 3 );
@@ -105,7 +105,7 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 					expect( workerPool.getConnectionName() ).toBe( "default" );
 					expect( workerPool.getConnection().getName() ).toBe( "default" );
 					expect( workerPool.getQuantity() ).toBe( 4 );
-					expect( workerPool.getQueues() ).toBe( [ "default" ] );
+					expect( workerPool.getQueue() ).toBe( "emails" );
 					expect( workerPool.getBackoff() ).toBe( 5 );
 					expect( workerPool.getTimeout() ).toBe( 30 );
 					expect( workerPool.getMaxAttempts() ).toBe( 3 );
