@@ -129,7 +129,7 @@ component singleton accessors="true" {
 		required string name,
 		string connectionName,
 		numeric quantity = 1,
-		array queues = [ "*" ],
+		string queue = "default",
 		boolean force = false
 	) {
 		var workerPoolDefinition = newWorkerPoolDefinitionInstance();
@@ -138,7 +138,7 @@ component singleton accessors="true" {
 			workerPoolDefinition.setConnectionName( arguments.connectionName );
 		}
 		workerPoolDefinition.setQuantity( arguments.quantity );
-		workerPoolDefinition.setQueues( arguments.queues );
+		workerPoolDefinition.setQueue( arguments.queue );
 		if ( variables.workerPoolDefinitions.keyExists( workerPoolDefinition.getName() ) && !arguments.force ) {
 			throw( "Duplicate Worker Pool name: [#workerPoolDefinition.getName()#]. Either use a different name or pass the `force` parameter to overwrite the existing Worker Pool." );
 		}
@@ -173,7 +173,7 @@ component singleton accessors="true" {
 			name = arguments.definition.getName(),
 			connectionName = arguments.definition.getConnectionName(),
 			quantity = arguments.definition.getQuantity(),
-			queues = arguments.definition.getQueues(),
+			queue = arguments.definition.getQueue(),
 			backoff = arguments.definition.getBackoff(),
 			timeout = arguments.definition.getTimeout(),
 			maxAttempts = arguments.definition.getMaxAttempts()
@@ -184,7 +184,7 @@ component singleton accessors="true" {
 		required string name,
 		required string connectionName,
 		numeric quantity = 1,
-		array queues = [ "*" ],
+		string queue = "default",
 		numeric backoff = 0,
 		numeric timeout = 60,
 		numeric maxAttempts = 1
@@ -194,7 +194,7 @@ component singleton accessors="true" {
 		instance.setConnectionName( arguments.connectionName );
 		instance.setConnection( getConnection( arguments.connectionName ) );
 		instance.setQuantity( arguments.quantity );
-		instance.setQueues( arguments.queues );
+		instance.setQueue( arguments.queue );
 		instance.setBackoff( arguments.backoff );
 		instance.setTimeout( arguments.timeout );
 		instance.setMaxAttempts( arguments.maxAttempts );

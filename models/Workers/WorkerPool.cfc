@@ -4,16 +4,14 @@ component accessors="true" {
 
 	property name="name" type="string";
 	property name="quantity" default="1";
-	property name="queues" type="array";
+	property
+		name="queue"
+		type="string"
+		default="default";
 	property name="backoff" default="0";
 	property name="timeout" default="60";
 	property name="maxAttempts" default="1";
 
-	property
-		name="_shouldWorkAllQueues"
-		type="boolean"
-		default="true"
-		accessors="false";
 	property name="connectionName";
 	property name="connection";
 
@@ -24,14 +22,12 @@ component accessors="true" {
 
 	public WorkerPool function init() {
 		variables.workerHooks = [];
-		variables.queues = [ "*" ];
 		variables.currentExecutorCount = 0;
 		return this;
 	}
 
-	public WorkerPool function setQueues( required array queues ) {
-		variables.queues = arguments.queues;
-		variables._shouldWorkAllQueues = variables.queues.filter( ( queue ) => queue == "*" ).len() > 0;
+	public WorkerPool function setQueue( required string queue ) {
+		variables.queue = arguments.queue;
 		return this;
 	}
 
@@ -79,10 +75,6 @@ component accessors="true" {
 		return this
 	}
 
-	public boolean function shouldWorkAllQueues() {
-		return variables._shouldWorkAllQueues;
-	}
-
 	public WorkerPool function shutdown() {
 		for ( var i = variables.workerHooks.len(); i >= 1; i-- ) {
 			var stopWorkerFn = variables.workerHooks[ i ];
@@ -97,7 +89,7 @@ component accessors="true" {
 		return {
 			"name" : variables.name,
 			"quantity" : variables.quantity,
-			"queues" : variables.queues,
+			"queue" : variables.queue,
 			"backoff" : variables.backoff,
 			"timeout" : variables.timeout,
 			"maxAttempts" : variables.maxAttempts,

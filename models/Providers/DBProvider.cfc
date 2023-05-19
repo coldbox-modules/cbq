@@ -39,7 +39,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 					.from( variables.tableName )
 					.limit( capacity )
 					.lockForUpdate( skipLocked = true )
-					.when( !pool.shouldWorkAllQueues(), ( q ) => q.whereIn( "queue", pool.getQueues() ) )
+					.where( "queue", pool.getQueue() )
 					.where( function( q1 ) {
 						// is available
 						q1.where( function( q2 ) {
@@ -58,9 +58,6 @@ component accessors="true" extends="AbstractQueueProvider" {
 								variables.getCurrentUnixTimestamp() - pool.getTimeout()
 							);
 						} );
-					} )
-					.when( !pool.shouldWorkAllQueues(), ( q ) => {
-						q.orderByRaw( generateQueuePriorityOrderBy( pool ) )
 					} )
 					.orderByAsc( "id" )
 					.get( options = variables.defaultQueryOptions );
@@ -123,14 +120,6 @@ component accessors="true" extends="AbstractQueueProvider" {
 				pool.getExecutor().getActiveCount() < pool.getCurrentExecutorCount();
 			} );
 		variables.log.debug( "Starting DB Task for Worker Pool [#arguments.pool.getName()#]" );
-	}
-
-	private string function generateQueuePriorityOrderBy( required WorkerPool pool ) {
-		var whenStatements = arguments.pool
-			.getQueues()
-			.filter( ( queue ) => queue != "*" )
-			.map( ( queue, i, arr ) => "WHEN queue = '#queue#' THEN #arr.len() - i + 1#" );
-		return "CASE #whenStatements.toList( " " )# ELSE 0 END DESC";
 	}
 
 	public any function push(

@@ -237,7 +237,7 @@ component accessors="true" {
 		}
 
 		if ( !isNull( arguments.pool ) ) {
-			return arguments.pool.getQueues()[ 1 ];
+			return arguments.pool.getQueue();
 		}
 
 		return "default";

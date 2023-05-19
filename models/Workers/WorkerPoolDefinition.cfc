@@ -22,10 +22,13 @@ component accessors="true" {
 	property name="quantity" default="1";
 
 	/**
-	 * An array of queues this Worker Pool will work, in order.
-	 * An asterisk (`*`) signifies all queues.
+	 * The queue name this Worker Pool will work
+	 * The default queue name is `default`.
 	 */
-	property name="queues" type="array";
+	property
+		name="queue"
+		type="string"
+		default="default";
 
 	/**
 	 * The time to wait between retrying jobs, in seconds.
@@ -48,7 +51,6 @@ component accessors="true" {
 	 * @returns A new WorkerPoolDefinition.
 	 */
 	public WorkerPoolDefinition function init() {
-		variables.queues = [ "*" ];
 		return this;
 	}
 
@@ -77,18 +79,14 @@ component accessors="true" {
 	}
 
 	/**
-	 * An array or list of queues to work, in order.
-	 * The asterisk (`*`) is a special symbol for all queues.
+	 * The name of a queue to work.
 	 *
-	 * @queues An array or list of queues to work, in order.
+	 * @queue The name of a queue to work.
 	 *
 	 * @returns The current WorkerPoolDefinition.
 	 */
-	public WorkerPoolDefinition function onQueues( required any queues ) {
-		if ( !isArray( arguments.queues ) ) {
-			arguments.queues = arraySlice( arguments.queues.split( ",\s*" ), 1 );
-		}
-		setQueues( arguments.queues );
+	public WorkerPoolDefinition function onQueue( required any queue ) {
+		setQueue( arguments.queue );
 		return this;
 	}
 
