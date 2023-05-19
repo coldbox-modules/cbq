@@ -1,16 +1,6 @@
 component accessors="true" extends="AbstractQueueProvider" {
 
-	property name="executor";
-
-	variables.currentExecutorCount = 0;
-
-	function onDIComplete() {
-		variables.executor = variables.async.newExecutor(
-			"cbq:ColdBoxAsyncProvider",
-			"fixed",
-			1
-		);
-	}
+	variables.queueWorkerPools = {};
 
 	public any function push(
 		required string queueName,
@@ -18,13 +8,23 @@ component accessors="true" extends="AbstractQueueProvider" {
 		numeric delay = 0,
 		numeric attempts = 0
 	) {
+		if ( !structKeyExists( variables.queueWorkerPools, arguments.queueName ) ) {
+			log.error(
+				"No Worker Pool registered for queue: #arguments.queueName#",
+				structKeyArray( variables.queueWorkerPools )
+			);
+			return;
+		}
+
+		var workerPool = variables.queueWorkerPools[ arguments.queueName ];
+
 		variables.async
 			.newFuture( function() {
 				sleep( delay * 1000 );
 				return true;
-			}, variables.executor )
+			}, workerPool.getExecutor() )
 			.then( function() {
-				return marshalJob( deserializeJob( payload, createUUID(), attempts ) );
+				return marshalJob( deserializeJob( payload, createUUID(), attempts ), workerPool );
 			} )
 			.onException( function( e ) {
 				// log failed job
@@ -74,6 +74,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 	}
 
 	public any function listen( required WorkerPool pool ) {
+		variables.queueWorkerPools[ arguments.pool.getQueue() ] = arguments.pool;
 		return this;
 	}
 
