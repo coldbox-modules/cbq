@@ -19,7 +19,7 @@ component {
 		}
 
 		var options = {};
-		structAppend( options, variables.settings.logFailedJobsProperties.queryOptions );
+		structAppend( options, variables.settings.logFailedJobsProperties.queryOptions ?: {} );
 		if ( variables.settings.logFailedJobsProperties.keyExists( "datasource" ) && ( !isSimpleValue( variables.settings.logFailedJobsProperties.datasource ) || variables.settings.logFailedJobsProperties.datasource != "" ) ) {
 			options[ "datasource" ] = variables.settings.logFailedJobsProperties.datasource;
 		}
