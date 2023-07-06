@@ -107,7 +107,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 					variables.log.debug( "Job ###job.getId()# has a maxAttempts of 0 and will always be released." );
 				}
 				variables.log.debug( "Releasing job ###job.getId()#" );
-				releaseJob( job );
+				releaseJob( job, pool );
 				variables.log.debug( "Released job ###job.getId()#" );
 			} else {
 				variables.log.debug( "Maximum attempts reached. Deleting job ###job.getId()#" );
