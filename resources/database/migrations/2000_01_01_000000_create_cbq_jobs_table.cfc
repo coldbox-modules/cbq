@@ -5,7 +5,7 @@ component {
             t.bigIncrements( "id" );
             t.string( "queue" );
             t.longText( "payload" );
-            t.unsignedTinyInteger( "attempts" );
+            t.unsignedInteger( "attempts" );
             t.unsignedInteger( "reservedDate" ).nullable();
             t.unsignedInteger( "availableDate" );
             t.unsignedInteger( "createdDate" );
