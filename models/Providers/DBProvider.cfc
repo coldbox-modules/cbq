@@ -65,6 +65,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 				for ( var job in jobRecords ) {
 					var jobCFC = variables.deserializeJob( job.payload, job.id, job.attempts );
 					markJobAsReserved( jobCFC );
+					application.cbController.getModuleService().loadMappings();
 					variables.marshalJob(
 						job = jobCFC,
 						pool = pool,
@@ -80,6 +81,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 			} )
 			.spacedDelay( 5, "seconds" )
 			.before( function() {
+				application.cbController.getModuleService().loadMappings();
 				if ( variables.log.canDebug() ) {
 					variables.log.debug( "Starting to fetch jobs from the db for Worker Pool [#pool.getName()#]" );
 				}
