@@ -26,7 +26,7 @@ jobs:
         coldbox: ["coldbox@6", "coldbox@7" ]
         experimental: [ false ]
         include:
-          - coldbox: "be"
+          - coldbox: "coldbox@be"
             cfengine: "lucee@5"
             experimental: true
           - coldbox: "coldbox@7"
