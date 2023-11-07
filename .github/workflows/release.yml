@@ -7,64 +7,10 @@ on:
       - master
 
 jobs:
+  
   tests:
-    name: Tests
-    if: "!contains(github.event.head_commit.message, '__SEMANTIC RELEASE VERSION UPDATE__')"
-    runs-on: ubuntu-latest
-    env:
-      DB_HOST: 127.0.0.1
-      DB_PORT: 3306
-      DB_DATABASE: cbq
-      DB_SCHEMA: cbq
-      DB_USER: root
-      DB_PASSWORD: root
-      DB_CLASS: com.mysql.cj.jdbc.Driver
-      DB_BUNDLENAME: com.mysql.cj
-      DB_BUNDLEVERSION: 8.0.19
-    strategy:
-      fail-fast: false
-      matrix:
-        # cfengine: ["lucee@5", "adobe@2018", "adobe@2021"]
-        cfengine: ["lucee@5"]
-        coldbox: ["coldbox@6"]
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v3.2.0
-
-      - name: Setup Java
-        uses: actions/setup-java@v3.9.0
-        with:
-          distribution: "temurin"
-          java-version: "11"
-
-      - name: Setup Database and Fixtures
-        run: |
-          sudo systemctl start mysql.service
-          # Create Database
-          mysql -u${{ env.DB_USER }} -p${{ env.DB_PASSWORD }} -e 'CREATE DATABASE ${{ env.DB_DATABASE }} CHARACTER SET utf8 COLLATE utf8_unicode_ci;'
-
-      - name: Setup CommandBox CLI
-        uses: Ortus-Solutions/setup-commandbox@main
-        with:
-          version: 5.7.0
-          install: commandbox-cfconfig
-
-      - name: Install dependencies
-        run: |
-          box install
-          box install ${{ matrix.coldbox }} --noSave
-
-      - name: Start server
-        run: |
-          box server start cfengine=${{ matrix.cfengine }} --noSaveSettings
-          # Install Adobe 2021 cfpm modules
-          if [[ "${{ matrix.cfengine }}" == "adobe@2021" ]] ; then
-            box run-script install:2021
-          fi
-
-      - name: Run TestBox Tests
-        # there is a strange MockBox bug for ACF that only exhibits itself sometimes. :-/
-        run: box testbox run || box testbox run
+    uses: ./.github/workflows/tests.yml
+    secrets: inherit
 
   release:
     name: Semantic Release
