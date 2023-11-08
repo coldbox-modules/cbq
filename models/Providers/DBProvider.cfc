@@ -30,6 +30,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 		var task = variables.schedulerService.getSchedulers()[ "cbScheduler@cbq" ]
 			.task( "cbq:db-watcher:#arguments.pool.getName()#" )
 			.call( () => {
+				var cfAppContext = getPageContext().getApplicationContext();
 				var capacity = pool.getCurrentExecutorCount() - pool.getExecutor().getActiveCount() + ( forceRun ? 1 : 0 );
 				if ( forceRun ) {
 					forceRun = false;
@@ -73,7 +74,8 @@ component accessors="true" extends="AbstractQueueProvider" {
 							variables.log.debug( "Job finished. Immediately running the scheduled task again." );
 							forceRun = true;
 							task.run();
-						}
+						},
+						cfAppContext = cfAppContext
 					);
 				}
 

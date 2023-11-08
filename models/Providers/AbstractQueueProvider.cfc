@@ -100,7 +100,8 @@ component accessors="true" {
 	public any function marshalJob(
 		required AbstractJob job,
 		required WorkerPool pool,
-		function afterJobHook
+		function afterJobHook,
+		any cfAppContext
 	) {
 		return variables.async
 			.newFuture( function() {
@@ -120,6 +121,9 @@ component accessors="true" {
 			}, arguments.pool.getExecutor() )
 			.orTimeout( getTimeoutForJob( arguments.job, arguments.pool ), "seconds" )
 			.then( function( result ) {
+				if ( !isNull( cfAppContext ) ) {
+					getPageContext().setApplicationContext( cfAppContext );
+				}
 				if ( job.getIsReleased() ) {
 					variables.log.debug( "Job [#job.getId()#] requested manual release." );
 
@@ -163,6 +167,9 @@ component accessors="true" {
 				}
 			} )
 			.onException( function( e ) {
+				if ( !isNull( cfAppContext ) ) {
+					getPageContext().setApplicationContext( cfAppContext );
+				}
 				// log failed job
 				if ( "java.util.concurrent.CompletionException" == e.getClass().getName() ) {
 					e = e.getCause();
