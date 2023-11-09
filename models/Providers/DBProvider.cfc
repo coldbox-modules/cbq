@@ -26,14 +26,15 @@ component accessors="true" extends="AbstractQueueProvider" {
 
 	public any function listen( required WorkerPool pool ) {
 		variables.log.debug( "Registering DB Task for Worker Pool [#arguments.pool.getName()#]" );
-		var forceRun = false;
+		// var forceRun = false;
 		var task = variables.schedulerService.getSchedulers()[ "cbScheduler@cbq" ]
 			.task( "cbq:db-watcher:#arguments.pool.getName()#" )
 			.call( () => {
-				var capacity = pool.getCurrentExecutorCount() - pool.getExecutor().getActiveCount() + ( forceRun ? 1 : 0 );
-				if ( forceRun ) {
-					forceRun = false;
-				}
+				var capacity = pool.getCurrentExecutorCount() - pool.getExecutor().getActiveCount();
+				// var capacity = pool.getCurrentExecutorCount() - pool.getExecutor().getActiveCount() + ( forceRun ? 1 : 0 );
+				// if ( forceRun ) {
+				// 	forceRun = false;
+				// }
 
 				var jobRecords = newQuery()
 					.from( variables.tableName )
@@ -70,9 +71,9 @@ component accessors="true" extends="AbstractQueueProvider" {
 						job = jobCFC,
 						pool = pool,
 						afterJobHook = () => {
-							variables.log.debug( "Job finished. Immediately running the scheduled task again." );
-							forceRun = true;
-							task.run();
+							// variables.log.debug( "Job finished. Immediately running the scheduled task again." );
+							// forceRun = true;
+							// task.run();
 						}
 					);
 				}
@@ -108,15 +109,15 @@ component accessors="true" extends="AbstractQueueProvider" {
 					{
 						"currentExecutorCount" : pool.getCurrentExecutorCount(),
 						"activeCount" : pool.getExecutor().getActiveCount(),
-						"willRun" : pool.getCurrentExecutorCount() > 0 && pool.getExecutor().getActiveCount() < pool.getCurrentExecutorCount(),
-						"forceRun" : forceRun
+						"willRun" : pool.getCurrentExecutorCount() > 0 && pool.getExecutor().getActiveCount() < pool.getCurrentExecutorCount()
+						// "forceRun" : forceRun
 					}
 				);
 
-				if ( forceRun ) {
-					variables.log.debug( "forceRun is true so we will fetch new database jobs and reset forceRun to false for Worker Pool [#pool.getName()#]." );
-					return true;
-				}
+				// if ( forceRun ) {
+				// 	variables.log.debug( "forceRun is true so we will fetch new database jobs and reset forceRun to false for Worker Pool [#pool.getName()#]." );
+				// 	return true;
+				// }
 
 				return pool.getCurrentExecutorCount() > 0 &&
 				pool.getExecutor().getActiveCount() < pool.getCurrentExecutorCount();
