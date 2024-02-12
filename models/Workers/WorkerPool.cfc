@@ -6,7 +6,7 @@ component accessors="true" {
 	property name="quantity" default="1";
 	property
 		name="queue"
-		type="string"
+		type="any"
 		default="default";
 	property name="backoff" default="0";
 	property name="timeout" default="60";
@@ -26,7 +26,18 @@ component accessors="true" {
 		return this;
 	}
 
-	public WorkerPool function setQueue( required string queue ) {
+	public WorkerPool function setQueue( required any queue ) {
+		if ( !isSimpleValue( arguments.queue ) && !getConnection().getProvider().supportsMultipleQueues() ) {
+			throw(
+				type = "cbq.WorkerPool.MultipleQueuesNotSupported",
+				message = "This connection does not support multiple queues.",
+				extendedinfo = serializeJSON( {
+					"queue" : arguments.queue,
+					"connection" : getConnection().getMemento()
+				} )
+			);
+		}
+
 		variables.queue = arguments.queue;
 		return this;
 	}

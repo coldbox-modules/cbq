@@ -129,7 +129,7 @@ component singleton accessors="true" {
 		required string name,
 		string connectionName,
 		numeric quantity = 1,
-		string queue = "default",
+		any queue = "default",
 		boolean force = false
 	) {
 		var workerPoolDefinition = newWorkerPoolDefinitionInstance();
@@ -184,7 +184,7 @@ component singleton accessors="true" {
 		required string name,
 		required string connectionName,
 		numeric quantity = 1,
-		string queue = "default",
+		any queue = "default",
 		numeric backoff = 0,
 		numeric timeout = 60,
 		numeric maxAttempts = 1

@@ -27,7 +27,7 @@ component accessors="true" {
 	 */
 	property
 		name="queue"
-		type="string"
+		type="any"
 		default="default";
 
 	/**

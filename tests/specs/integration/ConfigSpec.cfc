@@ -8,13 +8,21 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 					var config = getWireBox().getInstance( "Config@cbq" );
 					var connections = config.getConnections();
 					expect( connections ).toBeStruct();
-					expect( connections ).toHaveLength( 1 );
+					expect( connections ).toHaveLength( 2 );
+
 					expect( connections ).toHaveKey( "default" );
 					var defaultConnection = config.getConnection( "default" );
 					expect( defaultConnection.getName() ).toBe( "default" );
 					var defaultConnectionProvider = defaultConnection.getProvider();
 					expect( defaultConnectionProvider.getName() ).toBe( "ColdBoxAsyncProvider@cbq" );
 					expect( defaultConnectionProvider.getProperties() ).toBe( {} );
+
+					expect( connections ).toHaveKey( "db" );
+					var dbConnection = config.getConnection( "db" );
+					expect( dbConnection.getName() ).toBe( "db" );
+					var dbConnectionProvider = dbConnection.getProvider();
+					expect( dbConnectionProvider.getName() ).toBe( "DBProvider@cbq" );
+					expect( dbConnectionProvider.getProperties() ).toBe( {} );
 				} );
 
 				it( "throws an exception when trying to get a queue connection that does not exist", function() {
@@ -109,6 +117,48 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 					expect( workerPool.getBackoff() ).toBe( 5 );
 					expect( workerPool.getTimeout() ).toBe( 30 );
 					expect( workerPool.getMaxAttempts() ).toBe( 3 );
+				} );
+
+				it( "can define a worker pool with multiple queues", () => {
+					var config = getWireBox().getInstance( "Config@cbq" );
+
+					var workerPoolDefinition = config.newWorkerPool( name = "db:emails,*", force = true );
+					workerPoolDefinition.forConnection( "db" );
+					workerPoolDefinition.quantity( 4 );
+					workerPoolDefinition.onQueue( [ "emails", "*" ] );
+					workerPoolDefinition.backoff( 5 );
+					workerPoolDefinition.timeout( 30 );
+					workerPoolDefinition.maxAttempts( 3 );
+
+					var workerPool = workerPoolDefinition.register();
+
+					expect( workerPool.getName() ).toBe( "db:emails,*" );
+					expect( workerPool.getConnectionName() ).toBe( "db" );
+					expect( workerPool.getConnection().getName() ).toBe( "db" );
+					expect( workerPool.getQuantity() ).toBe( 4 );
+					expect( workerPool.getQueue() ).toBe( [ "emails", "*" ] );
+					expect( workerPool.getBackoff() ).toBe( 5 );
+					expect( workerPool.getTimeout() ).toBe( 30 );
+					expect( workerPool.getMaxAttempts() ).toBe( 3 );
+				} );
+
+				it( "throws an exception if the provider does not support multiple queues", () => {
+					var config = getWireBox().getInstance( "Config@cbq" );
+
+					var workerPoolDefinition = config.newWorkerPool( name = "default", force = true );
+					workerPoolDefinition.forConnection( "default" );
+					workerPoolDefinition.quantity( 4 );
+					workerPoolDefinition.onQueue( [ "emails", "*" ] );
+					workerPoolDefinition.backoff( 5 );
+					workerPoolDefinition.timeout( 30 );
+					workerPoolDefinition.maxAttempts( 3 );
+
+					expect( () => {
+						var workerPool = workerPoolDefinition.register();
+					} ).toThrow(
+						type = "cbq.WorkerPool.MultipleQueuesNotSupported",
+						regex = "This connection does not support multiple queues."
+					);
 				} );
 			} );
 

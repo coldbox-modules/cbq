@@ -243,7 +243,23 @@ component accessors="true" {
 		}
 
 		if ( !isNull( arguments.pool ) ) {
-			return arguments.pool.getQueue();
+			var queue = arguments.pool.getQueue();
+			if ( isArray( queue ) ) {
+				if ( supportsMultipleQueues() ) {
+					return queue[ 1 ];
+				} else {
+					throw(
+						type = "cbq.WorkerPool.MultipleQueuesNotSupported",
+						message = "This provider does not support multiple queues.",
+						extendedinfo = serializeJSON( {
+							"queue" : queue,
+							"pool" : arguments.pool.getMemento(),
+							"connection" : arguments.pool.getConnection().getMemento()
+						} )
+					);
+				}
+			}
+			return queue;
 		}
 
 		return "default";
@@ -259,6 +275,17 @@ component accessors="true" {
 		}
 
 		return 0;
+	}
+
+	public boolean function supportsMultipleQueues() {
+		return false;
+	}
+
+	public struct function getMemento() {
+		return {
+			"name" : variables.name,
+			"properties" : variables.properties
+		};
 	}
 
 	private numeric function getTimeoutForJob( required AbstractJob job, required WorkerPool pool ) {

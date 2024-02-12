@@ -40,7 +40,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 					.from( variables.tableName )
 					.limit( capacity )
 					.lockForUpdate( skipLocked = true )
-					.where( "queue", pool.getQueue() )
+					.when( !shouldWorkAllQueues( pool ), ( q ) => q.whereIn( "queue", pool.getQueue() ) )
 					.where( function( q1 ) {
 						// is available
 						q1.where( function( q2 ) {
@@ -59,6 +59,9 @@ component accessors="true" extends="AbstractQueueProvider" {
 								variables.getCurrentUnixTimestamp() - pool.getTimeout()
 							);
 						} );
+					} )
+					.when( worksMultipleQueues( pool ), ( q ) => {
+						q.orderByRaw( generateQueuePriorityOrderBy( pool ) )
 					} )
 					.orderByAsc( "id" )
 					.get( options = variables.defaultQueryOptions );
@@ -125,6 +128,29 @@ component accessors="true" extends="AbstractQueueProvider" {
 		variables.log.debug( "Starting DB Task for Worker Pool [#arguments.pool.getName()#]" );
 	}
 
+	private boolean function worksMultipleQueues( required WorkerPool pool ) {
+		return isArray( arguments.pool.getQueue() );
+	}
+
+	private boolean function shouldWorkAllQueues( required WorkerPool pool ) {
+		var queues = arguments.pool.getQueue();
+		if ( !isArray( queues ) ) {
+			return queues == "*";
+		}
+		return queues.filter( ( queue ) => queue == "*" ).len() > 0;
+	}
+
+	private string function generateQueuePriorityOrderBy( required WorkerPool pool ) {
+		var queues = arguments.pool.getQueue();
+		if ( !isArray( queues ) ) {
+			return;
+		}
+
+		var whenStatements = queues.filter( ( queue ) => queue != "*" )
+			.map( ( queue, i, arr ) => "WHEN queue = '#queue#' THEN #arr.len() - i + 1#" );
+		return "CASE #whenStatements.toList( " " )# ELSE 0 END DESC";
+	}
+
 	public any function push(
 		required string queueName,
 		required string payload,
@@ -184,6 +210,10 @@ component accessors="true" extends="AbstractQueueProvider" {
 				variables.log.debug( "All DB workers stopped. Disabling the DB Task." );
 			}
 		};
+	}
+
+	public boolean function supportsMultipleQueues() {
+		return true;
 	}
 
 	private void function markJobAsReserved( required AbstractJob job ) {

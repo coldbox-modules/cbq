@@ -14,4 +14,12 @@ component accessors="true" {
 		return this;
 	}
 
+	public struct function getMemento() {
+		return {
+			"name" : variables.name,
+			"provider" : variables.provider.getMemento(),
+			"defaultQueue" : variables.defaultQueue
+		};
+	}
+
 }
