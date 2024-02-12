@@ -5,6 +5,8 @@ component {
 	this.webUrl = "https://github.com/coldbox-modules/cbq";
 	this.cfmapping = "cbq";
 
+	variables.customInterceptionPointMethodNames = "onCBQJobAdded,onCBQJobMarshalled,onCBQJobComplete,onCBQJobException,onCBQJobFailed";
+
 	function configure() {
 		settings = {
 			// The path the custom config file to register connections and worker pools
@@ -37,12 +39,11 @@ component {
 				"tableName" : "cbq_failed_jobs",
 				"datasource" : "", // `datasource` can also be a struct.
 				"queryOptions" : {} // The sibling `datasource` property overrides any defined datasource in `queryOptions`.
-			}
+			},
+			"registerJobInterceptorRestrictionAspect" : false
 		};
 
-		interceptorSettings = {
-			"customInterceptionPoints" : "onCBQJobAdded,onCBQJobMarshalled,onCBQJobComplete,onCBQJobException,onCBQJobFailed"
-		};
+		interceptorSettings = { "customInterceptionPoints" : variables.customInterceptionPointMethodNames };
 		interceptors = [ { "class" : "#moduleMapping#.interceptors.LogFailedJobsInterceptor" } ];
 	}
 
@@ -67,6 +68,25 @@ component {
 		config.registerConnections();
 		if ( settings.registerWorkers ) {
 			config.registerWorkerPools();
+		}
+
+		if ( settings.registerJobInterceptorRestrictionAspect ) {
+			if ( !binder.getListeners().some( ( listener ) => listener.class.contains( "aop.Mixer" ) ) ) {
+				binder.listener(
+					class = "coldbox.system.aop.Mixer",
+					properties = {},
+					register = true
+				);
+			}
+			binder.mapAspect( "CBQJobInterceptorRestriction" ).to( "#moduleMapping#.models.JobInterceptorRestriction" );
+			binder.bindAspect(
+				binder.match().any(),
+				binder
+					.match()
+					.methods( variables.customInterceptionPointMethodNames )
+					.annotatedWith( "jobPattern" ),
+				"CBQJobInterceptorRestriction"
+			);
 		}
 	}
 
