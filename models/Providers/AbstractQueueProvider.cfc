@@ -109,6 +109,9 @@ component accessors="true" {
 				}
 
 				beforeJobRun( job );
+				if ( structKeyExists( job, "before" ) ) {
+					job.before();
+				}
 
 				variables.interceptorService.announce( "onCBQJobMarshalled", { "job" : job } );
 
@@ -153,6 +156,9 @@ component accessors="true" {
 					}
 				);
 
+				if ( structKeyExists( job, "after" ) ) {
+					job.after();
+				}
 				afterJobRun( job );
 
 				ensureSuccessfulBatchJobIsRecorded( job );

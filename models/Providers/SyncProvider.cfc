@@ -41,6 +41,9 @@ component accessors="true" extends="AbstractQueueProvider" {
 			}
 
 			beforeJobRun( arguments.job );
+			if ( structKeyExists( job, "before" ) ) {
+				job.before();
+			}
 
 			variables.interceptorService.announce( "onCBQJobMarshalled", { "job" : arguments.job } );
 
@@ -83,6 +86,9 @@ component accessors="true" extends="AbstractQueueProvider" {
 				}
 			);
 
+			if ( structKeyExists( job, "after" ) ) {
+				job.after();
+			}
 			afterJobRun( job );
 
 			ensureSuccessfulBatchJobIsRecorded( job );

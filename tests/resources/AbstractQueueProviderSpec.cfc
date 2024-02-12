@@ -2,6 +2,11 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 
     function run() {
         describe( "queue provider - #getProviderMapping()#", function() {
+            beforeEach( function() {
+                structDelete( application, "jobBeforeCalled" );
+                structDelete( application, "jobAfterCalled" );
+            } );
+
             it( "can manually release a job back on to a queue with a given delay", function() {
                 var provider = getProvider();
                 $spy( provider, "releaseJob" );
@@ -77,6 +82,29 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
                 expect( provider.$once( "releaseJob" ) ).toBeTrue( "releaseJob should have been called on the provider" );
                 var callLog = provider.$callLog()[ "releaseJob" ][ 1 ];
                 expect( provider.getBackoffForJob( callLog[ 1 ], callLog[ 2 ] ) ).toBe( 2, "The delay [2] should have been passed to the provider" );
+            } );
+
+            it( "calls a before and after method if present as lifecycle methods", () => {
+                var provider = getProvider();
+                var workerPool = makeWorkerPool( provider );
+                var job = getInstance( "BeforeAndAfterJob" )
+                    .setId( randRange( 1, 1000 ) );
+
+                param application.jobBeforeCalled = false;
+                param application.jobAfterCalled = false;
+
+                expect( application.jobBeforeCalled ).toBeFalse();
+                expect( application.jobAfterCalled ).toBeFalse();
+
+                // work the job
+                var jobFuture = provider.marshalJob( job, workerPool );
+                // if it is an async operation, wait for it to finish
+                if ( !isNull( jobFuture ) ) {
+                    jobFuture.get();
+                }
+
+                expect( application.jobBeforeCalled ).toBeTrue( "The before method should have been called" );
+                expect( application.jobAfterCalled ).toBeTrue( "The after method should have been called" );
             } );
         } );
     }
