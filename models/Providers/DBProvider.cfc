@@ -25,10 +25,10 @@ component accessors="true" extends="AbstractQueueProvider" {
 	}
 
 	public any function listen( required WorkerPool pool ) {
-		variables.log.debug( "Registering DB Task for Worker Pool [#arguments.pool.getName()#]" );
+		variables.log.debug( "Registering DB Task for Worker Pool [#arguments.pool.getUniqueId()#]" );
 		// var forceRun = false;
 		var task = variables.schedulerService.getSchedulers()[ "cbScheduler@cbq" ]
-			.task( "cbq:db-watcher:#arguments.pool.getName()#" )
+			.task( "cbq:db-watcher:#arguments.pool.getUniqueId()#" )
 			.call( () => {
 				var capacity = pool.getCurrentExecutorCount() - pool.getExecutor().getActiveCount();
 				// var capacity = pool.getCurrentExecutorCount() - pool.getExecutor().getActiveCount() + ( forceRun ? 1 : 0 );
@@ -36,39 +36,13 @@ component accessors="true" extends="AbstractQueueProvider" {
 				// 	forceRun = false;
 				// }
 
-				var jobRecords = newQuery()
-					.from( variables.tableName )
-					.limit( capacity )
-					.lockForUpdate( skipLocked = true )
-					.when( !shouldWorkAllQueues( pool ), ( q ) => q.whereIn( "queue", pool.getQueue() ) )
-					.where( function( q1 ) {
-						// is available
-						q1.where( function( q2 ) {
-							q2.whereNull( "reservedDate" )
-								.where(
-									"availableDate",
-									"<=",
-									variables.getCurrentUnixTimestamp()
-								);
-						} );
-						// is reserved but expired
-						q1.orWhere( function( q3 ) {
-							q3.where(
-								"reservedDate",
-								"<=",
-								variables.getCurrentUnixTimestamp() - pool.getTimeout()
-							);
-						} );
-					} )
-					.when( worksMultipleQueues( pool ), ( q ) => {
-						q.orderByRaw( generateQueuePriorityOrderBy( pool ) )
-					} )
-					.orderByAsc( "id" )
-					.get( options = variables.defaultQueryOptions );
+				var potentiallyOpenRecords = fetchPotentiallyOpenRecords( capacity, pool );
+				tryToLockRecords( potentiallyOpenRecords, pool );
+				var lockedRecords = fetchLockedRecords( capacity, pool );
 
-				for ( var job in jobRecords ) {
+				for ( var job in lockedRecords ) {
 					var jobCFC = variables.deserializeJob( job.payload, job.id, job.attempts );
-					markJobAsReserved( jobCFC );
+					incrementJobAttempts( jobCFC );
 					application.cbController.getModuleService().loadMappings();
 					variables.marshalJob(
 						job = jobCFC,
@@ -81,24 +55,24 @@ component accessors="true" extends="AbstractQueueProvider" {
 					);
 				}
 
-				return jobRecords.len();
+				return lockedRecords.len();
 			} )
 			.spacedDelay( 5, "seconds" )
 			.before( function() {
 				application.cbController.getModuleService().loadMappings();
 				if ( variables.log.canDebug() ) {
-					variables.log.debug( "Starting to fetch jobs from the db for Worker Pool [#pool.getName()#]" );
+					variables.log.debug( "Starting to fetch jobs from the db for Worker Pool [#pool.getUniqueId()#]" );
 				}
 			} )
 			.onSuccess( function( task, jobCount ) {
 				if ( variables.log.canDebug() ) {
-					variables.log.debug( "Finished fetching jobs from the db for Worker Pool [#pool.getName()#].  Total jobs retrieved: #jobCount#" );
+					variables.log.debug( "Finished fetching jobs from the db for Worker Pool [#pool.getUniqueId()#].  Total jobs retrieved: #jobCount#" );
 				}
 			} )
 			.onFailure( function( task, exception ) {
 				if ( variables.log.canError() ) {
 					variables.log.error(
-						"Exception when fetching database jobs for Worker Pool [#pool.getName()#]: #exception.message#",
+						"Exception when fetching database jobs for Worker Pool [#pool.getUniqueId()#]: #exception.message#",
 						{
 							"pool" : pool.getMemento(),
 							"exception" : arguments.exception
@@ -108,7 +82,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 			} )
 			.when( function() {
 				variables.log.debug(
-					"Checking if we should fetch new database jobs for Worker Pool [#pool.getName()#].",
+					"Checking if we should fetch new database jobs for Worker Pool [#pool.getUniqueId()#].",
 					{
 						"currentExecutorCount" : pool.getCurrentExecutorCount(),
 						"activeCount" : pool.getExecutor().getActiveCount(),
@@ -118,14 +92,14 @@ component accessors="true" extends="AbstractQueueProvider" {
 				);
 
 				// if ( forceRun ) {
-				// 	variables.log.debug( "forceRun is true so we will fetch new database jobs and reset forceRun to false for Worker Pool [#pool.getName()#]." );
+				// 	variables.log.debug( "forceRun is true so we will fetch new database jobs and reset forceRun to false for Worker Pool [#pool.getUniqueId()#]." );
 				// 	return true;
 				// }
 
 				return pool.getCurrentExecutorCount() > 0 &&
 				pool.getExecutor().getActiveCount() < pool.getCurrentExecutorCount();
 			} );
-		variables.log.debug( "Starting DB Task for Worker Pool [#arguments.pool.getName()#]" );
+		variables.log.debug( "Starting DB Task for Worker Pool [#arguments.pool.getUniqueId()#]" );
 	}
 
 	private boolean function worksMultipleQueues( required WorkerPool pool ) {
@@ -146,7 +120,8 @@ component accessors="true" extends="AbstractQueueProvider" {
 			return;
 		}
 
-		var whenStatements = queues.filter( ( queue ) => queue != "*" )
+		var whenStatements = queues
+			.filter( ( queue ) => queue != "*" )
 			.map( ( queue, i, arr ) => "WHEN queue = '#queue#' THEN #arr.len() - i + 1#" );
 		return "CASE #whenStatements.toList( " " )# ELSE 0 END DESC";
 	}
@@ -216,7 +191,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 		return true;
 	}
 
-	private void function markJobAsReserved( required AbstractJob job ) {
+	private void function incrementJobAttempts( required AbstractJob job ) {
 		if ( log.canDebug() ) {
 			log.debug( "Reserving job ###arguments.job.getId()#" );
 		}
@@ -277,6 +252,71 @@ component accessors="true" extends="AbstractQueueProvider" {
 
 			super.releaseJob( arguments.job, arguments.pool );
 		}
+	}
+
+	private array function fetchPotentiallyOpenRecords( required numeric capacity, required WorkerPool pool ) {
+		return newQuery()
+			.from( variables.tableName )
+			.limit( arguments.capacity )
+			.lockForUpdate( skipLocked = true )
+			.when( !shouldWorkAllQueues( arguments.pool ), ( q ) => q.whereIn( "queue", pool.getQueue() ) )
+			.where( ( q1 ) => {
+				// is available
+				q1.where( ( q2 ) => {
+					q2.whereNull( "reservedDate" )
+						.whereNull( "reservedBy" )
+						.where(
+							"availableDate",
+							"<=",
+							variables.getCurrentUnixTimestamp()
+						);
+				} );
+				// is reserved by this worker pool
+				q1.orWhere( ( q3 ) => {
+					q3.where( "reservedBy", pool.getUniqueId() );
+				} );
+				// is reserved but expired
+				q1.orWhere( ( q4 ) => {
+					q4.where(
+						"reservedDate",
+						"<=",
+						variables.getCurrentUnixTimestamp() - pool.getTimeout()
+					);
+				} );
+			} )
+			.orderByRaw( "CASE WHEN reservedBy = ? THEN 1 ELSE 2 END ASC", [ arguments.pool.getUniqueId() ] )
+			.when( worksMultipleQueues( arguments.pool ), ( q ) => {
+				q.orderByRaw( generateQueuePriorityOrderBy( pool ) )
+			} )
+			.orderByAsc( "id" )
+			.values( column = "id", options = variables.defaultQueryOptions );
+	}
+
+	private void function tryToLockRecords( required array ids, required WorkerPool pool ) {
+		newQuery()
+			.table( variables.tableName )
+			.whereIn( "id", arguments.ids )
+			.update(
+				values = {
+					"reservedBy" : arguments.pool.getUniqueId(),
+					"reservedDate" : getCurrentUnixTimestamp()
+				},
+				options = variables.defaultQueryOptions
+			);
+	}
+
+	private array function fetchLockedRecords( required numeric capacity, required WorkerPool pool ) {
+		return newQuery()
+			.from( variables.tableName )
+			.limit( arguments.capacity )
+			.lockForUpdate( skipLocked = true )
+			.when( !shouldWorkAllQueues( pool ), ( q ) => q.whereIn( "queue", pool.getQueue() ) )
+			.where( "reservedBy", pool.getUniqueId() )
+			.when( worksMultipleQueues( pool ), ( q ) => {
+				q.orderByRaw( generateQueuePriorityOrderBy( pool ) )
+			} )
+			.orderByAsc( "id" )
+			.get( options = variables.defaultQueryOptions );
 	}
 
 	public QueryBuilder function newQuery() provider="QueryBuilder@qb" {

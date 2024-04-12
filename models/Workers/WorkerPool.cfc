@@ -2,6 +2,7 @@ component accessors="true" {
 
 	property name="async" inject="coldbox:asyncManager";
 
+	property name="id" type="string";
 	property name="name" type="string";
 	property name="quantity" default="1";
 	property
@@ -21,9 +22,14 @@ component accessors="true" {
 
 
 	public WorkerPool function init() {
+		variables.id = createUUID();
 		variables.workerHooks = [];
 		variables.currentExecutorCount = 0;
 		return this;
+	}
+
+	public string function getUniqueId() {
+		return variables.name & "/" & variables.id;
 	}
 
 	public WorkerPool function setQueue( required any queue ) {
@@ -98,7 +104,9 @@ component accessors="true" {
 
 	public struct function getMemento() {
 		return {
+			"id" : variables.id,
 			"name" : variables.name,
+			"uniqueId" : getUniqueId(),
 			"quantity" : variables.quantity,
 			"queue" : variables.queue,
 			"backoff" : variables.backoff,
