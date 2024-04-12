@@ -40,6 +40,7 @@ component {
 				"datasource" : "", // `datasource` can also be a struct.
 				"queryOptions" : {} // The sibling `datasource` property overrides any defined datasource in `queryOptions`.
 			},
+			// Flag to allow restricting Job interceptor execution using a `jobPattern` annotation.
 			"registerJobInterceptorRestrictionAspect" : false
 		};
 
