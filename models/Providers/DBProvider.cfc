@@ -255,10 +255,13 @@ component accessors="true" extends="AbstractQueueProvider" {
 	}
 
 	private array function fetchPotentiallyOpenRecords( required numeric capacity, required WorkerPool pool ) {
-		return newQuery()
+		if ( log.canDebug() ) {
+			log.debug( "Fetching up to #capacity# potentially open record(s) [Worker Pool #pool.getUniqueId()#]." );
+		}
+
+		var ids = newQuery()
 			.from( variables.tableName )
 			.limit( arguments.capacity )
-			.lockForUpdate( skipLocked = true )
 			.when( !shouldWorkAllQueues( arguments.pool ), ( q ) => q.whereIn( "queue", pool.getQueue() ) )
 			.where( ( q1 ) => {
 				// is available
@@ -290,10 +293,26 @@ component accessors="true" extends="AbstractQueueProvider" {
 			} )
 			.orderByAsc( "id" )
 			.values( column = "id", options = variables.defaultQueryOptions );
+
+		if ( log.canDebug() ) {
+			log.debug(
+				"Found #arrayLen( ids )# potentially open record(s) to lock [Worker Pool #pool.getUniqueId()#].",
+				{ "ids" : ids }
+			);
+		}
+
+		return ids;
 	}
 
 	private void function tryToLockRecords( required array ids, required WorkerPool pool ) {
-		newQuery()
+		if ( log.canDebug() ) {
+			log.debug(
+				"Attempting to lock #arrayLen( ids )# record(s) for Worker Pool #pool.getUniqueId()#.",
+				{ "ids" : ids }
+			);
+		}
+
+		var result = newQuery()
 			.table( variables.tableName )
 			.whereIn( "id", arguments.ids )
 			.update(
@@ -302,14 +321,28 @@ component accessors="true" extends="AbstractQueueProvider" {
 					"reservedDate" : getCurrentUnixTimestamp()
 				},
 				options = variables.defaultQueryOptions
+			)
+			.result;
+
+		if ( log.canDebug() ) {
+			log.debug(
+				"Attempted to lock #arrayLen( ids )# record(s). Actually locked #result.recordCount# record(s).",
+				{
+					"attemptedIds" : ids,
+					"workerPool" : pool.getUniqueId()
+				}
 			);
+		}
 	}
 
 	private array function fetchLockedRecords( required numeric capacity, required WorkerPool pool ) {
-		return newQuery()
+		if ( log.canDebug() ) {
+			log.debug( "Fetching up to #arguments.capacity# locked record(s) for Worker Pool #pool.getUniqueId()#." );
+		}
+
+		var records = newQuery()
 			.from( variables.tableName )
 			.limit( arguments.capacity )
-			.lockForUpdate( skipLocked = true )
 			.when( !shouldWorkAllQueues( pool ), ( q ) => q.whereIn( "queue", pool.getQueue() ) )
 			.where( "reservedBy", pool.getUniqueId() )
 			.when( worksMultipleQueues( pool ), ( q ) => {
@@ -317,6 +350,15 @@ component accessors="true" extends="AbstractQueueProvider" {
 			} )
 			.orderByAsc( "id" )
 			.get( options = variables.defaultQueryOptions );
+
+		if ( log.canDebug() ) {
+			log.debug(
+				"Fetched #arrayLen( records )# locked record(s) for Worker Pool #pool.getUniqueId()#.",
+				{ "records" : records }
+			);
+		}
+
+		return records;
 	}
 
 	public QueryBuilder function newQuery() provider="QueryBuilder@qb" {
