@@ -66,7 +66,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 			} )
 			.onSuccess( function( task, jobCount ) {
 				if ( variables.log.canDebug() ) {
-					variables.log.debug( "Finished fetching jobs from the db for Worker Pool [#pool.getUniqueId()#].  Total jobs retrieved: #jobCount#" );
+					variables.log.debug( "Finished fetching jobs from the db for Worker Pool [#pool.getUniqueId()#].  Total jobs retrieved: #jobCount.orElse( 0 )#" );
 				}
 			} )
 			.onFailure( function( task, exception ) {
