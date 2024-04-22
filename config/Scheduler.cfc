@@ -16,6 +16,31 @@ component {
             .setDisabled( variables.settings.scaleInterval <= 0 );
     }
 
+
+	function onShutdown( boolean force = false, numeric timeout = variables.shutdownTimeout ) {
+		systemOutput( "Shutting down cbq scheduler", true );
+		if ( variables.log.canDebug() ) {
+			variables.log.debug( "Shutting down cbq scheduler", {
+				"force": force,
+				"timeout": timeout
+			} );
+		}
+
+		var config = variables.wirebox.getInstance( "Config@cbq" );
+		var workerPoolMap = config.getWorkerPools();
+		for ( var workerPoolName in workerPoolMap ) {
+			var workerPool = workerPoolMap[ workerPoolName ];
+			workerPool.shutdown( argumentCollection = arguments );
+		}
+
+		if ( variables.log.canDebug() ) {
+			variables.log.debug( "Finished shutting down cbq scheduler", {
+				"force": force,
+				"timeout": timeout
+			} );
+		}
+	}
+
     function beforeAnyTask( task ) {
         if ( variables.log.canDebug() ) {
             variables.log.debug( "[#arguments.task.getName()#] starting on #getThreadName()#..." );

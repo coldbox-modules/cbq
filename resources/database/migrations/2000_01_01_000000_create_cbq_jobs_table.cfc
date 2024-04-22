@@ -6,9 +6,9 @@ component {
             t.string( "queue" );
             t.longText( "payload" );
             t.unsignedTinyInteger( "attempts" );
-            t.unsignedInteger( "reservedDate" ).nullable();
-            t.unsignedInteger( "availableDate" );
-            t.unsignedInteger( "createdDate" );
+            t.unsignedBigInteger( "reservedDate" ).nullable();
+            t.unsignedBigInteger( "availableDate" );
+            t.unsignedBigInteger( "createdDate" );
 
 			t.index( "queue" );
         } );

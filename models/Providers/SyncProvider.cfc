@@ -89,10 +89,10 @@ component accessors="true" extends="AbstractQueueProvider" {
 			if ( structKeyExists( job, "after" ) ) {
 				job.after();
 			}
-			afterJobRun( job );
+			afterJobRun( job, pool );
 
-			ensureSuccessfulBatchJobIsRecorded( job );
-			dispatchNextJobInChain( job );
+			ensureSuccessfulBatchJobIsRecorded( job, pool );
+			dispatchNextJobInChain( job, pool );
 		} catch ( any e ) {
 			// log failed job
 			if ( log.canError() ) {

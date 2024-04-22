@@ -27,7 +27,7 @@ A queue provider **must** extend the `AbstractQueueProvider` and implement the r
 Additionally, the Queue Provider can use the following hooks to do additional processing or cleanup:
 
 + `private void function beforeJobRun( required AbstractJob job )`
-+ `private void function afterJobFailed( required any id, AbstractJob job )`
++ `private void function afterJobFailed( required any id, AbstractJob job, WorkerPool pool )`
 
 ### Job
 A job is a CFC that follows the `IDispatchableJob` interface (easily done by extending the `AbstractJob` component). It defines how to serialize the job using a memento pattern and deserialize the job from the queue.  It also holds the data needed to execute the job and a `handle` method that is called when working the job from the queue.  Job components exist in the context of your application so you have access to all the models, services, and helpers you have already written.  (Raw string messages can also be dispatched via cbq.  The message will need to be handled directly by your queue worker.)
@@ -175,7 +175,7 @@ To dispatch a job to a queue to be worked, call the `dispatch` method on a `Job`
 Dispatching a job serializes it and sends it to the configured connection.  It will
 later be picked up by a worker and processed.
 
-```cfc  
+```cfc
 getInstance( "GreetingJob" ).dispatch();
 ```
 

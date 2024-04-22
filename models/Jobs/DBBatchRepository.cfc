@@ -205,7 +205,7 @@ component singleton accessors="true" {
 	 * @delay  The delay, in seconds, to add to the current timestamp
 	 * @return int
 	 */
-	public numeric function getCurrentUnixTimestamp( numeric delay = 0 ) {
+	public date function getCurrentUnixTimestamp( numeric delay = 0 ) {
 		return variables.javaInstant.now().getEpochSecond() + arguments.delay;
 	}
 
