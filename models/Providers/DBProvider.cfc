@@ -36,12 +36,14 @@ component accessors="true" extends="AbstractQueueProvider" {
 				// 	forceRun = false;
 				// }
 
-				var potentiallyOpenRecords = fetchPotentiallyOpenRecords( capacity, pool );
-				if ( potentiallyOpenRecords.isEmpty() ) {
-					return potentiallyOpenRecords.len();
+				transaction {
+					var potentiallyOpenRecords = fetchPotentiallyOpenRecords( capacity, pool );
+					if ( potentiallyOpenRecords.isEmpty() ) {
+						return potentiallyOpenRecords.len();
+					}
+					tryToLockRecords( potentiallyOpenRecords, pool );
 				}
 
-				tryToLockRecords( potentiallyOpenRecords, pool );
 				var lockedRecords = fetchLockedRecords( capacity, pool );
 
 				for ( var job in lockedRecords ) {
@@ -306,6 +308,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 		var ids = newQuery()
 			.from( variables.tableName )
 			.limit( arguments.capacity )
+			.lockForUpdate( skipLocked = true )
 			.when( !shouldWorkAllQueues( arguments.pool ), ( q ) => q.whereIn( "queue", pool.getQueue() ) )
 			.where( ( q ) => {
 				q.whereNull( "completedDate" );
@@ -331,7 +334,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 					q4.where(
 						"reservedDate",
 						"<=",
-						variables.getCurrentTimestamp() - pool.getTimeout()
+						dateAdd( "s", pool.getTimeout(), variables.getCurrentTimestamp() )
 					);
 				} );
 			} )
