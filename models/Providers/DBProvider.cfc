@@ -221,7 +221,11 @@ component accessors="true" extends="AbstractQueueProvider" {
 		// deleteJobById( arguments.job.getId() );
 	}
 
-	private void function afterJobFailed( required any id, AbstractJob job, WorkerPool pool ) {
+	private void function afterJobFailed(
+		required any id,
+		AbstractJob job,
+		WorkerPool pool
+	) {
 		markJobAsFailedById( arguments.id, isNull( arguments.pool ) ? javacast( "null", "" ) : arguments.pool );
 		// deleteJobById( arguments.id );
 	}
@@ -252,10 +256,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 				q.whereNull( "completedDate" );
 				q.whereNull( "failedDate" );
 			} )
-			.update(
-				values = { "completedDate" : getCurrentTimestamp() },
-				options = variables.defaultQueryOptions
-			);
+			.update( values = { "completedDate" : getCurrentTimestamp() }, options = variables.defaultQueryOptions );
 	}
 
 	private void function markJobAsFailedById( required numeric id, WorkerPool pool ) {
@@ -270,10 +271,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 				q.whereNull( "completedDate" );
 				q.whereNull( "failedDate" );
 			} )
-			.update(
-				values = { "failedDate" : getCurrentTimestamp() },
-				options = variables.defaultQueryOptions
-			);
+			.update( values = { "failedDate" : getCurrentTimestamp() }, options = variables.defaultQueryOptions );
 	}
 
 	public void function releaseJob( required AbstractJob job, required WorkerPool pool ) {
@@ -291,9 +289,17 @@ component accessors="true" extends="AbstractQueueProvider" {
 					"queue" : getQueueForJob( arguments.job, arguments.pool ),
 					"payload" : serializeJSON( job.getMemento() ),
 					"attempts" : arguments.job.getCurrentAttempt(),
-					"reservedBy" : { "value": "", "null": true, "nulls": true },
+					"reservedBy" : {
+						"value" : "",
+						"null" : true,
+						"nulls" : true
+					},
 					"availableDate" : getCurrentTimestamp( getBackoffForJob( arguments.job, arguments.pool ) ),
-					"reservedDate" : { "value": "", "null": true, "nulls": true },
+					"reservedDate" : {
+						"value" : "",
+						"null" : true,
+						"nulls" : true
+					},
 					"lastReleasedDate" : getCurrentTimestamp()
 				},
 				options = variables.defaultQueryOptions
@@ -334,7 +340,11 @@ component accessors="true" extends="AbstractQueueProvider" {
 					q4.where(
 						"reservedDate",
 						"<=",
-						dateAdd( "s", pool.getTimeout(), variables.getCurrentTimestamp() )
+						dateAdd(
+							"s",
+							pool.getTimeout(),
+							variables.getCurrentTimestamp()
+						)
 					);
 				} );
 			} )

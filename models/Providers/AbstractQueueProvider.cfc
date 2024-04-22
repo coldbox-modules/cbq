@@ -183,7 +183,14 @@ component accessors="true" {
 					);
 				}
 
-				variables.interceptorService.announce( "onCBQJobException", { "job" : job, "pool": pool, "exception" : e } );
+				variables.interceptorService.announce(
+					"onCBQJobException",
+					{
+						"job" : job,
+						"pool" : pool,
+						"exception" : e
+					}
+				);
 
 				var jobMaxAttempts = getMaxAttemptsForJob( job, pool );
 				if ( jobMaxAttempts == 0 || job.getCurrentAttempt() < jobMaxAttempts ) {
@@ -224,7 +231,11 @@ component accessors="true" {
 	private void function afterJobRun( required AbstractJob job, required WorkerPool pool ) {
 	}
 
-	private void function afterJobFailed( required any id, AbstractJob job, WorkerPool pool ) {
+	private void function afterJobFailed(
+		required any id,
+		AbstractJob job,
+		WorkerPool pool
+	) {
 	}
 
 	public void function releaseJob( required AbstractJob job, required WorkerPool pool ) {
