@@ -59,7 +59,8 @@ component {
 					},
 					"exceptionStackTrace" : arguments.data.exception.stackTrace,
 					"exception" : serializeJSON( arguments.data.exception ),
-					"failedDate" : now()
+					"failedDate" : now(),
+					"originalId" : arguments.data.job.getId()
 				},
 				options = options
 			);

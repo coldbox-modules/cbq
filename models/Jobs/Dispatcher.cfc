@@ -21,11 +21,12 @@ component singleton accessors="true" {
 			}
 		);
 
+		arguments.job.setCurrentAttempt( 0 );
 		connection.push(
 			queueName = queueName,
 			payload = serializeJSON( arguments.job.getMemento() ),
 			delay = delay,
-			attempts = 1 // TODO: shouldn't this be 0?
+			attempts = 0
 		);
 
 		return this;
@@ -50,10 +51,11 @@ component singleton accessors="true" {
 				}
 			);
 
+			job.setCurrentAttempt( 0 );
 			connection.push(
 				queueName = queueName,
 				payload = serializeJSON( job.getMemento() ),
-				attempts = 1
+				attempts = 0
 			);
 		}
 
