@@ -37,6 +37,10 @@ component accessors="true" extends="AbstractQueueProvider" {
 				// }
 
 				var potentiallyOpenRecords = fetchPotentiallyOpenRecords( capacity, pool );
+				if ( potentiallyOpenRecords.isEmpty() ) {
+					return potentiallyOpenRecords.len();
+				}
+
 				tryToLockRecords( potentiallyOpenRecords, pool );
 				var lockedRecords = fetchLockedRecords( capacity, pool );
 
@@ -134,9 +138,9 @@ component accessors="true" extends="AbstractQueueProvider" {
 	) {
 		var jobPayload = {
 			"queue" : arguments.queueName,
-			"attempts" : arguments.attempts, // TODO: attempts should probably be in the payload
-			"availableDate" : getCurrentUnixTimestamp( arguments.delay ),
-			"createdDate" : getCurrentUnixTimestamp(),
+			"attempts" : arguments.attempts,
+			"availableDate" : getCurrentTimestamp( arguments.delay ),
+			"createdDate" : getCurrentTimestamp(),
 			"payload" : arguments.payload
 		};
 
@@ -200,7 +204,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 			.where( "id", arguments.job.getId() )
 			.update(
 				values = {
-					"reservedDate" : getCurrentUnixTimestamp(),
+					"reservedDate" : getCurrentTimestamp(),
 					"attempts" : arguments.job.getCurrentAttempt() + 1
 				},
 				options = variables.defaultQueryOptions
@@ -210,12 +214,14 @@ component accessors="true" extends="AbstractQueueProvider" {
 		}
 	}
 
-	private void function afterJobRun( required AbstractJob job ) {
-		deleteJobById( arguments.job.getId() );
+	private void function afterJobRun( required AbstractJob job, required WorkerPool pool ) {
+		markJobAsCompletedById( arguments.job.getId(), arguments.pool );
+		// deleteJobById( arguments.job.getId() );
 	}
 
-	private void function afterJobFailed( required any id, AbstractJob job ) {
-		deleteJobById( arguments.id );
+	private void function afterJobFailed( required any id, AbstractJob job, WorkerPool pool ) {
+		markJobAsFailedById( arguments.id, isNull( arguments.pool ) ? javacast( "null", "" ) : arguments.pool );
+		// deleteJobById( arguments.id );
 	}
 
 	private void function deleteJobById( required numeric id ) {
@@ -235,23 +241,61 @@ component accessors="true" extends="AbstractQueueProvider" {
 		}
 	}
 
-	public void function releaseJob( required AbstractJob job, required WorkerPool pool ) {
-		transaction {
-			if (
-				!newQuery()
-					.table( variables.tableName )
-					.lockForUpdate()
-					.find( id = arguments.job.getId(), options = variables.defaultQueryOptions )
-					.isEmpty()
-			) {
-				newQuery()
-					.table( variables.tableName )
-					.where( "id", arguments.job.getId() )
-					.delete( options = variables.defaultQueryOptions );
-			}
+	private void function markJobAsCompletedById( required numeric id, required WorkerPool pool ) {
+		newQuery()
+			.table( variables.tableName )
+			.where( "id", arguments.id )
+			.where( "reservedBy", arguments.pool.getUniqueId() )
+			.where( ( q ) => {
+				q.whereNull( "completedDate" );
+				q.whereNull( "failedDate" );
+			} )
+			.update(
+				values = { "completedDate" : getCurrentTimestamp() },
+				options = variables.defaultQueryOptions
+			);
+	}
 
-			super.releaseJob( arguments.job, arguments.pool );
-		}
+	private void function markJobAsFailedById( required numeric id, WorkerPool pool ) {
+		newQuery()
+			.table( variables.tableName )
+			.where( "id", arguments.id )
+			.when( !isNull( arguments.pool ), ( q ) => {
+				q.where( "reservedBy", pool.getUniqueId() );
+			} )
+			.where( "reservedBy", arguments.pool.getUniqueId() )
+			.where( ( q ) => {
+				q.whereNull( "completedDate" );
+				q.whereNull( "failedDate" );
+			} )
+			.update(
+				values = { "failedDate" : getCurrentTimestamp() },
+				options = variables.defaultQueryOptions
+			);
+	}
+
+	public void function releaseJob( required AbstractJob job, required WorkerPool pool ) {
+		arguments.job.setCurrentAttempt( arguments.job.getCurrentAttempt() + 1 );
+		newQuery()
+			.table( variables.tableName )
+			.where( "id", arguments.job.getId() )
+			.where( "reservedBy", arguments.pool.getUniqueId() )
+			.where( ( q ) => {
+				q.whereNull( "completedDate" );
+				q.whereNull( "failedDate" );
+			} )
+			.update(
+				values = {
+					"queue" : getQueueForJob( arguments.job, arguments.pool ),
+					"payload" : serializeJSON( job.getMemento() ),
+					"attempts" : arguments.job.getCurrentAttempt(),
+					"reservedBy" : { "value": "", "null": true, "nulls": true },
+					"availableDate" : getCurrentTimestamp( getBackoffForJob( arguments.job, arguments.pool ) ),
+					"reservedDate" : { "value": "", "null": true, "nulls": true },
+					"lastReleasedDate" : getCurrentTimestamp()
+				},
+				options = variables.defaultQueryOptions
+			);
 	}
 
 	private array function fetchPotentiallyOpenRecords( required numeric capacity, required WorkerPool pool ) {
@@ -263,6 +307,10 @@ component accessors="true" extends="AbstractQueueProvider" {
 			.from( variables.tableName )
 			.limit( arguments.capacity )
 			.when( !shouldWorkAllQueues( arguments.pool ), ( q ) => q.whereIn( "queue", pool.getQueue() ) )
+			.where( ( q ) => {
+				q.whereNull( "completedDate" );
+				q.whereNull( "failedDate" );
+			} )
 			.where( ( q1 ) => {
 				// is available
 				q1.where( ( q2 ) => {
@@ -271,7 +319,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 						.where(
 							"availableDate",
 							"<=",
-							variables.getCurrentUnixTimestamp()
+							variables.getCurrentTimestamp()
 						);
 				} );
 				// is reserved by this worker pool
@@ -283,7 +331,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 					q4.where(
 						"reservedDate",
 						"<=",
-						variables.getCurrentUnixTimestamp() - pool.getTimeout()
+						variables.getCurrentTimestamp() - pool.getTimeout()
 					);
 				} );
 			} )
@@ -315,10 +363,14 @@ component accessors="true" extends="AbstractQueueProvider" {
 		var result = newQuery()
 			.table( variables.tableName )
 			.whereIn( "id", arguments.ids )
+			.where( ( q ) => {
+				q.whereNull( "completedDate" );
+				q.whereNull( "failedDate" );
+			} )
 			.update(
 				values = {
 					"reservedBy" : arguments.pool.getUniqueId(),
-					"reservedDate" : getCurrentUnixTimestamp()
+					"reservedDate" : getCurrentTimestamp()
 				},
 				options = variables.defaultQueryOptions
 			)
@@ -344,6 +396,10 @@ component accessors="true" extends="AbstractQueueProvider" {
 			.from( variables.tableName )
 			.limit( arguments.capacity )
 			.when( !shouldWorkAllQueues( pool ), ( q ) => q.whereIn( "queue", pool.getQueue() ) )
+			.where( ( q ) => {
+				q.whereNull( "completedDate" );
+				q.whereNull( "failedDate" );
+			} )
 			.where( "reservedBy", pool.getUniqueId() )
 			.when( worksMultipleQueues( pool ), ( q ) => {
 				q.orderByRaw( generateQueuePriorityOrderBy( pool ) )

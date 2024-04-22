@@ -1,7 +1,6 @@
 component accessors="true" {
 
 	property name="interceptorService" inject="box:interceptorService";
-	property name="javaInstant" inject="java:java.time.Instant";
 	property name="async" inject="coldbox:asyncManager";
 	property name="log" inject="logbox:logger:{this}";
 	property name="wirebox" inject="wirebox";
@@ -93,8 +92,8 @@ component accessors="true" {
 	 * @delay  The delay, in seconds, to add to the current timestamp
 	 * @return int
 	 */
-	public numeric function getCurrentUnixTimestamp( numeric delay = 0 ) {
-		return variables.javaInstant.now().getEpochSecond() + arguments.delay;
+	public numeric function getCurrentTimestamp( numeric delay = 0 ) {
+		return dateAdd( "s", arguments.delay, now() );
 	}
 
 	public any function marshalJob(
@@ -159,13 +158,13 @@ component accessors="true" {
 				if ( structKeyExists( job, "after" ) ) {
 					job.after();
 				}
-				afterJobRun( job );
+				afterJobRun( job, pool );
 
-				ensureSuccessfulBatchJobIsRecorded( job );
-				dispatchNextJobInChain( job );
+				ensureSuccessfulBatchJobIsRecorded( job, pool );
+				dispatchNextJobInChain( job, pool );
 
 				if ( !isNull( afterJobHook ) && ( isCustomFunction( afterJobHook ) || isClosure( afterJobHook ) ) ) {
-					afterJobHook( job );
+					afterJobHook( job, pool );
 				}
 			} )
 			.onException( function( e ) {
@@ -184,7 +183,7 @@ component accessors="true" {
 					);
 				}
 
-				variables.interceptorService.announce( "onCBQJobException", { "job" : job, "exception" : e } );
+				variables.interceptorService.announce( "onCBQJobException", { "job" : job, "pool": pool, "exception" : e } );
 
 				var jobMaxAttempts = getMaxAttemptsForJob( job, pool );
 				if ( jobMaxAttempts == 0 || job.getCurrentAttempt() < jobMaxAttempts ) {
@@ -207,14 +206,14 @@ component accessors="true" {
 
 					variables.interceptorService.announce( "onCBQJobFailed", { "job" : job, "exception" : e } );
 
-					afterJobFailed( job.getId(), job );
+					afterJobFailed( job.getId(), job, pool );
 					ensureFailedBatchJobIsRecorded( job, e );
 
-					variables.log.debug( "Deleted job ###job.getId()# after maximum failed attempts." );
+					variables.log.debug( "Marked job ###job.getId()# as failed after maximum failed attempts." );
 				}
 
 				if ( !isNull( afterJobHook ) && ( isCustomFunction( afterJobHook ) || isClosure( afterJobHook ) ) ) {
-					afterJobHook( job );
+					afterJobHook( job, pool );
 				}
 			} );
 	}
@@ -222,18 +221,19 @@ component accessors="true" {
 	private void function beforeJobRun( required AbstractJob job ) {
 	}
 
-	private void function afterJobRun( required AbstractJob job ) {
+	private void function afterJobRun( required AbstractJob job, required WorkerPool pool ) {
 	}
 
-	private void function afterJobFailed( required any id, AbstractJob job ) {
+	private void function afterJobFailed( required any id, AbstractJob job, WorkerPool pool ) {
 	}
 
 	public void function releaseJob( required AbstractJob job, required WorkerPool pool ) {
+		arguments.job.setCurrentAttempt( arguments.job.getCurrentAttempt() + 1 );
 		push(
 			getQueueForJob( arguments.job, arguments.pool ),
 			serializeJSON( job.getMemento() ),
 			getBackoffForJob( arguments.job, arguments.pool ),
-			arguments.job.getCurrentAttempt() + 1
+			arguments.job.getCurrentAttempt()
 		);
 	}
 
@@ -351,7 +351,7 @@ component accessors="true" {
 		nextJob.dispatch();
 	}
 
-	private void function ensureSuccessfulBatchJobIsRecorded( required AbstractJob job ) {
+	private void function ensureSuccessfulBatchJobIsRecorded( required AbstractJob job, required WorkerPool pool ) {
 		if ( !arguments.job.isBatchJob() ) {
 			return;
 		}
@@ -360,7 +360,7 @@ component accessors="true" {
 			return;
 		}
 
-		arguments.job.getBatch().recordSuccessfulJob( arguments.job.getId() );
+		arguments.job.getBatch().recordSuccessfulJob( arguments.job.getId(), arguments.pool );
 	}
 
 	private void function ensureFailedBatchJobIsRecorded( required AbstractJob job, required any error ) {

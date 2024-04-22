@@ -63,7 +63,7 @@ component singleton accessors="true" {
 					"failedJobs" : 0,
 					"failedJobIds" : "[]",
 					"options" : serializeJSON( arguments.batch.getOptions() ),
-					"createdDate" : variables.getCurrentUnixTimestamp()
+					"createdDate" : variables.getCurrentTimestamp()
 				},
 				options = variables.defaultQueryOptions
 			);
@@ -163,7 +163,7 @@ component singleton accessors="true" {
 	public void function markAsFinished( required string id ) {
 		qb.table( variables.batchTableName )
 			.where( "id", arguments.id )
-			.update( values = { "completedDate" : getCurrentUnixTimestamp() }, options = variables.defaultQueryOptions );
+			.update( values = { "completedDate" : getCurrentTimestamp() }, options = variables.defaultQueryOptions );
 	}
 
 	/**
@@ -176,8 +176,8 @@ component singleton accessors="true" {
 			.where( "id", arguments.id )
 			.update(
 				values = {
-					"cancelledDate" : getCurrentUnixTimestamp(),
-					"completedDate" : getCurrentUnixTimestamp()
+					"cancelledDate" : getCurrentTimestamp(),
+					"completedDate" : getCurrentTimestamp()
 				},
 				options = variables.defaultQueryOptions
 			);
@@ -205,7 +205,7 @@ component singleton accessors="true" {
 	 * @delay  The delay, in seconds, to add to the current timestamp
 	 * @return int
 	 */
-	public numeric function getCurrentUnixTimestamp( numeric delay = 0 ) {
+	public numeric function getCurrentTimestamp( numeric delay = 0 ) {
 		return variables.javaInstant.now().getEpochSecond() + arguments.delay;
 	}
 

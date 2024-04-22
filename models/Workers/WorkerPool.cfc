@@ -20,11 +20,13 @@ component accessors="true" {
 	property name="executor";
 	property name="currentExecutorCount";
 
+	property name="shutdownTimeout";
 
 	public WorkerPool function init() {
 		variables.id = createUUID();
 		variables.workerHooks = [];
 		variables.currentExecutorCount = 0;
+		variables.shutdownTimeout = 30;
 		return this;
 	}
 
@@ -92,13 +94,20 @@ component accessors="true" {
 		return this
 	}
 
-	public WorkerPool function shutdown() {
+	public WorkerPool function shutdown( boolean force = false, numeric timeout = variables.shutdownTimeout ) {
 		for ( var i = variables.workerHooks.len(); i >= 1; i-- ) {
 			var stopWorkerFn = variables.workerHooks[ i ];
 			stopWorkerFn();
 			arrayDeleteAt( variables.workerHooks, i );
 		}
 		setQuantity( 0 );
+		if ( !isNull( variables.executor ) ) {
+			if ( arguments.force ) {
+				variables.executor.shutdownNow();
+			} else {
+				variables.executor.shutdownAndAwaitTermination( arguments.timeout );
+			}
+		}
 		return this;
 	}
 
