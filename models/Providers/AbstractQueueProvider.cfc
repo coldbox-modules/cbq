@@ -93,7 +93,7 @@ component accessors="true" {
 	 * @return int
 	 */
 	public numeric function getCurrentTimestamp( numeric delay = 0 ) {
-		return dateAdd( "s", arguments.delay, now() );
+		return dateAdd( "s", arguments.delay, nowServer() );
 	}
 
 	public any function marshalJob(

@@ -331,10 +331,6 @@ component accessors="true" extends="AbstractQueueProvider" {
 							variables.getCurrentTimestamp()
 						);
 				} );
-				// is reserved by this worker pool
-				q1.orWhere( ( q3 ) => {
-					q3.where( "reservedBy", pool.getUniqueId() );
-				} );
 				// is reserved but expired
 				q1.orWhere( ( q4 ) => {
 					q4.where(
@@ -342,7 +338,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 						"<=",
 						dateAdd(
 							"s",
-							pool.getTimeout(),
+							-1 * pool.getTimeout(),
 							variables.getCurrentTimestamp()
 						)
 					);

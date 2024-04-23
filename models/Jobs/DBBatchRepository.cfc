@@ -205,8 +205,8 @@ component singleton accessors="true" {
 	 * @delay  The delay, in seconds, to add to the current timestamp
 	 * @return int
 	 */
-	public numeric function getCurrentTimestamp( numeric delay = 0 ) {
-		return variables.javaInstant.now().getEpochSecond() + arguments.delay;
+	public date function getCurrentTimestamp( numeric delay = 0 ) {
+		return dateAdd( "s", arguments.delay, now() );
 	}
 
 	public Batch function newBatch() provider="Batch@cbq" {

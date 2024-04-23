@@ -26,9 +26,9 @@ component {
             t.addColumn( t.datetime( "availableDate" ).nullable() );
             t.addColumn( t.datetime( "reservedDate" ).nullable() );
             t.addColumn( t.datetime( "completedDate" ).nullable() );
-            t.addColumn( t.datetime( "releasedDate" ).nullable() );
+            t.addColumn( t.datetime( "lastReleasedDate" ).nullable() );
             t.addColumn( t.datetime( "failedDate" ).nullable() );
-			t.addConstraint( t.index( [ "completedDate", "releasedDate", "failedDate" ] ) );
+			t.addIndex( t.index( [ "completedDate", "failedDate" ] ) );
         } );
 
 		switch ( grammarName ) {
@@ -157,9 +157,9 @@ component {
 		}
 
         schema.alter( "cbq_jobs", ( t ) => {
-			t.dropConstraint( t.index( [ "completedDate", "releasedDate", "failedDate" ] ) );
+			t.dropIndex( t.index( [ "completedDate", "failedDate" ] ) );
             t.dropColumn( "failedDate" );
-            t.dropColumn( "releasedDate" );
+            t.dropColumn( "lastReleasedDate" );
             t.dropColumn( "completedDate" );
             t.dropColumn( "reservedDate" );
             t.dropColumn( "availableDate" );
