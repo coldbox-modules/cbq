@@ -232,23 +232,6 @@ component accessors="true" extends="AbstractQueueProvider" {
 		// deleteJobById( arguments.id );
 	}
 
-	private void function deleteJobById( required numeric id ) {
-		transaction {
-			if (
-				!newQuery()
-					.table( variables.tableName )
-					.lockForUpdate()
-					.find( id = arguments.id, options = variables.defaultQueryOptions )
-					.isEmpty()
-			) {
-				newQuery()
-					.table( variables.tableName )
-					.where( "id", arguments.id )
-					.delete( options = variables.defaultQueryOptions );
-			}
-		}
-	}
-
 	private void function markJobAsCompletedById( required numeric id, required WorkerPool pool ) {
 		newQuery()
 			.table( variables.tableName )

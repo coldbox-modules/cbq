@@ -41,6 +41,11 @@ component accessors="true" {
 	property name="timeout" inject="coldbox:moduleSettings:cbq:defaultWorkerTimeout";
 
 	/**
+	 * The maximum amount of time to wait for jobs to complete when requesting a shutdown, like for a ColdBox reinit, in seconds.
+	 */
+	property name="shutdownTimeout" inject="coldbox:moduleSettings:cbq:defaultWorkerShutdownTimeout";
+
+	/**
 	 * The maximum number of attempts made before a job is marked as failed.
 	 */
 	property name="maxAttempts" inject="coldbox:moduleSettings:cbq:defaultWorkerMaxAttempts";
@@ -93,7 +98,7 @@ component accessors="true" {
 	/**
 	 * Sets the backoff time amount, in seconds.
 	 *
-	 * @count The backoff time amount, in seconds.
+	 * @amount The backoff time amount, in seconds.
 	 *
 	 * @returns The current WorkerPoolDefinition.
 	 */
@@ -105,12 +110,24 @@ component accessors="true" {
 	/**
 	 * Sets the timeout time amount, in seconds.
 	 *
-	 * @count The timeout time amount, in seconds.
+	 * @amount The timeout time amount, in seconds.
 	 *
 	 * @returns The current WorkerPoolDefinition.
 	 */
 	public WorkerPoolDefinition function timeout( required numeric amount ) {
 		setTimeout( arguments.amount );
+		return this;
+	}
+
+	/**
+	 * Sets the shutdown timeout time amount, in seconds.
+	 *
+	 * @amount The shutdown timeout time amount, in seconds.
+	 *
+	 * @returns The current WorkerPoolDefinition.
+	 */
+	public WorkerPoolDefinition function shutdownTimeout( required numeric amount ) {
+		setShutdownTimeout( arguments.amount );
 		return this;
 	}
 
