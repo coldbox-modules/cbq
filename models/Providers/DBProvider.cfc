@@ -48,7 +48,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 
 				for ( var job in lockedRecords ) {
 					var jobCFC = variables.deserializeJob( job.payload, job.id, job.attempts );
-					incrementJobAttempts( jobCFC );
+					incrementJobAttempts( jobCFC, pool );
 					application.cbController.getModuleService().loadMappings();
 					variables.marshalJob(
 						job = jobCFC,
@@ -197,13 +197,15 @@ component accessors="true" extends="AbstractQueueProvider" {
 		return true;
 	}
 
-	private void function incrementJobAttempts( required AbstractJob job ) {
+	private void function incrementJobAttempts( required AbstractJob job, required WorkerPool pool ) {
 		if ( log.canDebug() ) {
 			log.debug( "Reserving job ###arguments.job.getId()#" );
 		}
 		newQuery()
 			.table( variables.tableName )
 			.where( "id", arguments.job.getId() )
+			.where( "reservedBy", arguments.pool.getUniqueId() )
+			.whereNull( "reservedDate" )
 			.update(
 				values = {
 					"reservedDate" : getCurrentUnixTimestamp(),
@@ -372,10 +374,16 @@ component accessors="true" extends="AbstractQueueProvider" {
 				q.whereNull( "completedDate" );
 				q.whereNull( "failedDate" );
 			} )
+			.where( ( q ) => {
+				q.where( ( q2 ) => {
+					q2.whereNull( "reservedBy" );
+					q2.whereNull( "reservedDate" );
+				} ).orWhere( "reservedDate", "<=", variables.getCurrentUnixTimestamp() - pool.getTimeout() );
+			} )
 			.update(
 				values = {
 					"reservedBy" : arguments.pool.getUniqueId(),
-					"reservedDate" : getCurrentUnixTimestamp()
+					"reservedDate" : { "value": "", "null": true, "nulls": true }
 				},
 				options = variables.defaultQueryOptions
 			)
@@ -406,6 +414,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 				q.whereNull( "failedDate" );
 			} )
 			.where( "reservedBy", pool.getUniqueId() )
+			.whereNull( "reservedDate" )
 			.when( worksMultipleQueues( pool ), ( q ) => {
 				q.orderByRaw( generateQueuePriorityOrderBy( pool ) )
 			} )
