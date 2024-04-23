@@ -141,8 +141,8 @@ component accessors="true" extends="AbstractQueueProvider" {
 		var jobPayload = {
 			"queue" : arguments.queueName,
 			"attempts" : arguments.attempts,
-			"availableDate" : getCurrentTimestamp( arguments.delay ),
-			"createdDate" : getCurrentTimestamp(),
+			"availableDate" : getCurrentUnixTimestamp( arguments.delay ),
+			"createdDate" : getCurrentUnixTimestamp(),
 			"payload" : arguments.payload
 		};
 
@@ -206,7 +206,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 			.where( "id", arguments.job.getId() )
 			.update(
 				values = {
-					"reservedDate" : getCurrentTimestamp(),
+					"reservedDate" : getCurrentUnixTimestamp(),
 					"attempts" : arguments.job.getCurrentAttempt() + 1
 				},
 				options = variables.defaultQueryOptions
@@ -256,7 +256,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 				q.whereNull( "completedDate" );
 				q.whereNull( "failedDate" );
 			} )
-			.update( values = { "completedDate" : getCurrentTimestamp() }, options = variables.defaultQueryOptions );
+			.update( values = { "completedDate" : getCurrentUnixTimestamp() }, options = variables.defaultQueryOptions );
 	}
 
 	private void function markJobAsFailedById( required numeric id, WorkerPool pool ) {
@@ -271,7 +271,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 				q.whereNull( "completedDate" );
 				q.whereNull( "failedDate" );
 			} )
-			.update( values = { "failedDate" : getCurrentTimestamp() }, options = variables.defaultQueryOptions );
+			.update( values = { "failedDate" : getCurrentUnixTimestamp() }, options = variables.defaultQueryOptions );
 	}
 
 	public void function releaseJob( required AbstractJob job, required WorkerPool pool ) {
@@ -294,13 +294,13 @@ component accessors="true" extends="AbstractQueueProvider" {
 						"null" : true,
 						"nulls" : true
 					},
-					"availableDate" : getCurrentTimestamp( getBackoffForJob( arguments.job, arguments.pool ) ),
+					"availableDate" : getCurrentUnixTimestamp( getBackoffForJob( arguments.job, arguments.pool ) ),
 					"reservedDate" : {
 						"value" : "",
 						"null" : true,
 						"nulls" : true
 					},
-					"lastReleasedDate" : getCurrentTimestamp()
+					"lastReleasedDate" : getCurrentUnixTimestamp()
 				},
 				options = variables.defaultQueryOptions
 			);
@@ -328,7 +328,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 						.where(
 							"availableDate",
 							"<=",
-							variables.getCurrentTimestamp()
+							variables.getCurrentUnixTimestamp()
 						);
 				} );
 				// is reserved but expired
@@ -336,11 +336,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 					q4.where(
 						"reservedDate",
 						"<=",
-						dateAdd(
-							"s",
-							-1 * pool.getTimeout(),
-							variables.getCurrentTimestamp()
-						)
+						variables.getCurrentUnixTimestamp() - pool.getTimeout()
 					);
 				} );
 			} )
@@ -379,7 +375,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 			.update(
 				values = {
 					"reservedBy" : arguments.pool.getUniqueId(),
-					"reservedDate" : getCurrentTimestamp()
+					"reservedDate" : getCurrentUnixTimestamp()
 				},
 				options = variables.defaultQueryOptions
 			)

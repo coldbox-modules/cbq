@@ -1,6 +1,7 @@
 component accessors="true" {
 
 	property name="interceptorService" inject="box:interceptorService";
+	property name="javaInstant" inject="java:java.time.Instant";
 	property name="async" inject="coldbox:asyncManager";
 	property name="log" inject="logbox:logger:{this}";
 	property name="wirebox" inject="wirebox";
@@ -92,8 +93,8 @@ component accessors="true" {
 	 * @delay  The delay, in seconds, to add to the current timestamp
 	 * @return int
 	 */
-	public numeric function getCurrentTimestamp( numeric delay = 0 ) {
-		return dateAdd( "s", arguments.delay, nowServer() );
+	public numeric function getCurrentUnixTimestamp( numeric delay = 0 ) {
+		return variables.javaInstant.now().getEpochSecond() + arguments.delay;
 	}
 
 	public any function marshalJob(
