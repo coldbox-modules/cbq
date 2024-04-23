@@ -184,4 +184,10 @@ component accessors="true" {
 		return this;
 	}
 
+	private boolean function checkInterrupted() {
+		var thisThread = createObject( "java", "java.lang.Thread" ).currentThread();
+		// Has the user tried to interrupt this thread?
+		return thisThread.interrupted();
+	}
+
 }

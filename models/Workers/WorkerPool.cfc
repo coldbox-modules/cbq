@@ -11,6 +11,7 @@ component accessors="true" {
 		default="default";
 	property name="backoff" default="0";
 	property name="timeout" default="60";
+	property name="shutdownTimeout" default="60";
 	property name="maxAttempts" default="1";
 
 	property name="connectionName";
@@ -20,13 +21,11 @@ component accessors="true" {
 	property name="executor";
 	property name="currentExecutorCount";
 
-	property name="shutdownTimeout";
 
 	public WorkerPool function init() {
 		variables.id = createUUID();
 		variables.workerHooks = [];
 		variables.currentExecutorCount = 0;
-		variables.shutdownTimeout = 30;
 		return this;
 	}
 
