@@ -376,14 +376,23 @@ component accessors="true" extends="AbstractQueueProvider" {
 			} )
 			.where( ( q ) => {
 				q.where( ( q2 ) => {
-					q2.whereNull( "reservedBy" );
-					q2.whereNull( "reservedDate" );
-				} ).orWhere( "reservedDate", "<=", variables.getCurrentUnixTimestamp() - pool.getTimeout() );
+						q2.whereNull( "reservedBy" );
+						q2.whereNull( "reservedDate" );
+					} )
+					.orWhere(
+						"reservedDate",
+						"<=",
+						variables.getCurrentUnixTimestamp() - pool.getTimeout()
+					);
 			} )
 			.update(
 				values = {
 					"reservedBy" : arguments.pool.getUniqueId(),
-					"reservedDate" : { "value": "", "null": true, "nulls": true }
+					"reservedDate" : {
+						"value" : "",
+						"null" : true,
+						"nulls" : true
+					}
 				},
 				options = variables.defaultQueryOptions
 			)
