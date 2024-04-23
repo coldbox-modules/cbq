@@ -176,6 +176,7 @@ component singleton accessors="true" {
 			queue = arguments.definition.getQueue(),
 			backoff = arguments.definition.getBackoff(),
 			timeout = arguments.definition.getTimeout(),
+			shutdownTimeout = arguments.definition.getShutdownTimeout(),
 			maxAttempts = arguments.definition.getMaxAttempts()
 		);
 	}
@@ -187,6 +188,7 @@ component singleton accessors="true" {
 		any queue = "default",
 		numeric backoff = 0,
 		numeric timeout = 60,
+		numeric shutdownTimeout = 60,
 		numeric maxAttempts = 1
 	) {
 		var instance = newWorkerPoolInstance();
@@ -197,6 +199,7 @@ component singleton accessors="true" {
 		instance.setQueue( arguments.queue );
 		instance.setBackoff( arguments.backoff );
 		instance.setTimeout( arguments.timeout );
+		instance.setShutdownTimeout( arguments.shutdownTimeout );
 		instance.setMaxAttempts( arguments.maxAttempts );
 
 		if ( structKeyExists( variables.workerPools, arguments.name ) ) {
