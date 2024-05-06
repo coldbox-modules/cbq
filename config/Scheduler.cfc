@@ -4,6 +4,32 @@ component {
     property name="log" inject="logbox:logger:{this}";
 
     function configure() {
+        registerScaleWorkerPoolsTask();
+
+        param variables.settings.logFailedJobsProperties = {};
+        param variables.settings.logFailedJobsProperties.cleanup = {};
+        param variables.settings.logFailedJobsProperties.cleanup.enabled = false;
+        if ( variables.settings.logFailedJobsProperties.cleanup.enabled ) {
+            registerCleanupFailedJobLogTask();
+        } else {
+			if ( log.canDebug() ) {
+				log.debug( "Cleanup task disabled for failed job log." );
+			}
+		}
+
+        param variables.settings.batchRepositoryProperties = {};
+        param variables.settings.batchRepositoryProperties.cleanup = {};
+        param variables.settings.batchRepositoryProperties.cleanup.enabled = false;
+        if ( variables.settings.batchRepositoryProperties.cleanup.enabled ) {
+            registerCleanupBatchJobsTask();
+        } else {
+			if ( log.canDebug() ) {
+				log.debug( "Cleanup task disabled for completed and cancelled batches." );
+			}
+		}
+    }
+
+    private any function registerScaleWorkerPoolsTask() {
         task( "cbq:scale-worker-pools" )
             .call( function() {
                 var config = variables.wirebox.getInstance( "Config@cbq" );
@@ -16,6 +42,115 @@ component {
             .setDisabled( variables.settings.scaleInterval <= 0 );
     }
 
+    private any function registerCleanupFailedJobLogTask() {
+        param variables.settings.logFailedJobsProperties.cleanup.criteria = function( q, currentUnixTimestamp ) {
+			q.where( "failedDate", "<=", currentUnixTimestamp - ( 60 * 60 * 24 * 30 ) ); // 30 days
+		};
+
+        param variables.settings.logFailedJobsProperties.tableName = "cbq_failed_jobs";
+
+        var options = {};
+		param variables.settings.logFailedJobsProperties.queryOptions = {};
+		structAppend( options, variables.settings.logFailedJobsProperties.queryOptions );
+		if (
+			variables.settings.logFailedJobsProperties.keyExists( "datasource" ) && (
+				!isSimpleValue( variables.settings.logFailedJobsProperties.datasource ) || variables.settings.logFailedJobsProperties.datasource != ""
+			)
+		) {
+			options[ "datasource" ] = variables.settings.logFailedJobsProperties.datasource;
+		}
+
+		variables.log.debug( "Registering DB Task for cleaning up the failed job log" );
+
+		var cleanupTask = task( "cbq:db-cleanup-failed-job-log" )
+			.call( () => {
+				var deleteQuery = newQuery().table( variables.settings.logFailedJobsProperties.tableName );
+                variables.settings.logFailedJobsProperties.cleanup.criteria( deleteQuery, getCurrentUnixTimestamp() );
+				return deleteQuery.delete( options = options ).result.recordCount;
+			} )
+			.before( function() {
+				if ( variables.log.canDebug() ) {
+					variables.log.debug( "Starting to clean up the failed job log." );
+				}
+			} )
+			.onSuccess( function( task, deletedCount ) {
+				if ( variables.log.canDebug() ) {
+					variables.log.debug( "Finished cleaning up the failed job log. Total jobs deleted: #deletedCount.orElse( 0 )#" );
+				}
+			} )
+			.onFailure( function( task, exception ) {
+				if ( variables.log.canError() ) {
+					variables.log.error(
+						"Exception when cleaning up the failed job log: #exception.message#",
+						{
+							"exception" : arguments.exception
+						}
+					);
+				}
+			} );
+
+        param variables.settings.logFailedJobsProperties.cleanup.frequency = function( task ) { task.everyDay(); };
+		variables.settings.logFailedJobsProperties.cleanup.frequency( cleanupTask );
+    }
+
+    private any function registerCleanupBatchJobsTask() {
+        param variables.settings.batchRepositoryProperties.cleanup.criteria = function( q, currentUnixTimestamp ) {
+			q.where( ( q3 ) => {
+                q3.where( "cancelledDate", "<=", currentUnixTimestamp - ( 60 * 60 * 24 * 30 ) ); // 30 days
+                q3.orWhere( "completedDate", "<=", currentUnixTimestamp - ( 60 * 60 * 24 * 30 ) ); // 30 week
+            } );
+		};
+
+        param variables.settings.batchRepositoryProperties.tableName = "cbq_batches";
+
+        var options = {};
+		param variables.settings.batchRepositoryProperties.queryOptions = {};
+		structAppend( options, variables.settings.batchRepositoryProperties.queryOptions );
+		if (
+			variables.settings.batchRepositoryProperties.keyExists( "datasource" ) && (
+				!isSimpleValue( variables.settings.batchRepositoryProperties.datasource ) || variables.settings.batchRepositoryProperties.datasource != ""
+			)
+		) {
+			options[ "datasource" ] = variables.settings.batchRepositoryProperties.datasource;
+		}
+
+		variables.log.debug( "Registering DB Task for cleaning up completed or cancelled batches" );
+
+		var cleanupTask = task( "cbq:db-cleanup-batches" )
+			.call( () => {
+				var deleteQuery = newQuery()
+                    .table( variables.settings.batchRepositoryProperties.tableName )
+                    .where( ( q2 ) => {
+                        q2.whereNotNull( "cancelledDate" );
+                        q2.orWhereNotNull( "completedDate" );
+                    } );
+                variables.settings.batchRepositoryProperties.cleanup.criteria( deleteQuery, getCurrentUnixTimestamp() );
+				return deleteQuery.delete( options = options ).result.recordCount;
+			} )
+			.before( function() {
+				if ( variables.log.canDebug() ) {
+					variables.log.debug( "Starting to clean up completed or cancelled batches." );
+				}
+			} )
+			.onSuccess( function( task, deletedCount ) {
+				if ( variables.log.canDebug() ) {
+					variables.log.debug( "Finished cleaning up completed or cancelled batches. Total jobs deleted: #deletedCount.orElse( 0 )#" );
+				}
+			} )
+			.onFailure( function( task, exception ) {
+				if ( variables.log.canError() ) {
+					variables.log.error(
+						"Exception when cleaning up completed or cancelled batches: #exception.message#",
+						{
+							"exception" : arguments.exception
+						}
+					);
+				}
+			} );
+
+        param variables.settings.batchRepositoryProperties.cleanup.frequency = function( task ) { task.everyDay(); };
+		variables.settings.batchRepositoryProperties.cleanup.frequency( cleanupTask );
+    }
 
 	function onShutdown( boolean force = false, numeric timeout = variables.shutdownTimeout ) {
 		systemOutput( "Shutting down cbq scheduler", true );
@@ -84,5 +219,18 @@ component {
             "noOverlaps": task.getNoOverlaps()
         };
     }
+
+    /**
+	 * Get the "available at" UNIX timestamp.
+	 *
+	 * @delay  The delay, in seconds, to add to the current timestamp
+	 * @return int
+	 */
+	public numeric function getCurrentUnixTimestamp( numeric delay = 0 ) {
+		return createObject( "java", "java.time.Instant" ).now().getEpochSecond() + arguments.delay;
+	}
+
+	public QueryBuilder function newQuery() provider="QueryBuilder@qb" {
+	}
 
 }
