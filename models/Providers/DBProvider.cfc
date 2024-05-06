@@ -25,7 +25,18 @@ component accessors="true" extends="AbstractQueueProvider" {
 	}
 
 	public any function listen( required WorkerPool pool ) {
+		registerWorkerTask( arguments.pool );
+
+		param variables.settings.cleanup = {};
+		param variables.settings.cleanup.enabled = false;
+		if ( variables.settings.cleanup.enabled ) {
+			registerCleanupTask( arguments.pool );
+		}
+	}
+
+	private any function registerWorkerTask( required WorkerPool pool ) {
 		variables.log.debug( "Registering DB Task for Worker Pool [#arguments.pool.getUniqueId()#]" );
+
 		// var forceRun = false;
 		var task = variables.schedulerService.getSchedulers()[ "cbScheduler@cbq" ]
 			.task( "cbq:db-watcher:#arguments.pool.getUniqueId()#" )
@@ -105,7 +116,74 @@ component accessors="true" extends="AbstractQueueProvider" {
 				return pool.getCurrentExecutorCount() > 0 &&
 				pool.getExecutor().getActiveCount() < pool.getCurrentExecutorCount();
 			} );
+
 		variables.log.debug( "Starting DB Task for Worker Pool [#arguments.pool.getUniqueId()#]" );
+	}
+
+	private any function registerCleanupTask( required WorkerPool pool ) {
+		if ( isNull( variables.settings.cleanup.criteria ) ) {
+			variables.settings.cleanup.criteria = function( q, currentUnixTimestamp ) {
+				q.where( function( q ) {
+					q3.where(
+						"completedDate",
+						"<=",
+						currentUnixTimestamp - ( 60 * 60 * 24 * 7 )
+					); // one week
+					q3.orWhere(
+						"failedDate",
+						"<=",
+						currentUnixTimestamp - ( 60 * 60 * 24 * 7 )
+					); // one week
+				} );
+			};
+		}
+
+		variables.log.debug( "Registering DB Task for cleaning up completed and failed worker pool jobs [#arguments.pool.getUniqueId()#]" );
+
+		var cleanupTask = variables.schedulerService.getSchedulers()[ "cbScheduler@cbq" ]
+			.task( "cbq:db-cleanup-watcher:#arguments.pool.getUniqueId()#" )
+			.call( function() {
+				var deleteQuery = newQuery()
+					.table( variables.tableName )
+					.where( function( q ) {
+						q2.whereNotNull( "completedDate" );
+						q2.orWhereNotNull( "failedDate" );
+					} );
+
+				variables.settings.cleanup.criteria( deleteQuery, getCurrentUnixTimestamp() );
+
+				return deleteQuery.delete( options = variables.defaultQueryOptions ).result.recordCount;
+			} )
+			.before( function() {
+				if ( variables.log.canDebug() ) {
+					variables.log.debug( "Starting to clean up completed and failed jobs from the db for Worker Pool [#pool.getUniqueId()#]" );
+				}
+			} )
+			.onSuccess( function( task, deletedCount ) {
+				if ( variables.log.canDebug() ) {
+					variables.log.debug( "Finished cleaning up completed and failed jobs from the db for Worker Pool [#pool.getUniqueId()#]. Total jobs deleted: #deletedCount.orElse( 0 )#" );
+				}
+			} )
+			.onFailure( function( task, exception ) {
+				if ( variables.log.canError() ) {
+					variables.log.error(
+						"Exception when cleaning up completed and failed database jobs for Worker Pool [#pool.getUniqueId()#]: #exception.message#",
+						{
+							"pool" : pool.getMemento(),
+							"exception" : arguments.exception
+						}
+					);
+				}
+			} );
+
+		if ( isNull( variables.settings.cleanup.frequency ) ) {
+			variables.settings.cleanup.frequency = function( task ) {
+				task.everyDay();
+			};
+		}
+		variables.settings.cleanup.frequency( cleanupTask );
+
+		variables.log.debug( "Starting DB Task for cleaning up completed and failed worker pool jobs [#arguments.pool.getUniqueId()#]" );
 	}
 
 	private boolean function worksMultipleQueues( required WorkerPool pool ) {

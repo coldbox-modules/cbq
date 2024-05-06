@@ -32,15 +32,48 @@ component {
 			"batchRepositoryProperties" : {
 				"tableName" : "cbq_batches",
 				"datasource" : "", // `datasource` can also be a struct
-				"queryOptions" : {} // The sibling `datasource` property overrides any defined datasource in queryOptions.
+				"queryOptions" : {}, // The sibling `datasource` property overrides any defined datasource in queryOptions.
+				"cleanup" : {
+					"enabled" : false,
+					"frequency" : ( task ) => {
+						task.everyDay();
+					},
+					"criteria" : ( qb, currentUnixTimestamp ) => {
+						qb.where( ( q ) => {
+							q.where(
+								"cancelledDate",
+								"<=",
+								currentUnixTimestamp - ( 60 * 60 * 24 * 30 )
+							); // 30 days
+							q.orWhere(
+								"completedDate",
+								"<=",
+								currentUnixTimestamp - ( 60 * 60 * 24 * 30 )
+							); // 30 week
+						} );
+					}
+				}
 			},
 			// Flag to turn on logging failed jobs to a database table.
 			"logFailedJobs" : false,
-			// Datasource information for loggin failed jobs.
+			// Datasource information for logging failed jobs.
 			"logFailedJobsProperties" : {
 				"tableName" : "cbq_failed_jobs",
 				"datasource" : "", // `datasource` can also be a struct.
-				"queryOptions" : {} // The sibling `datasource` property overrides any defined datasource in `queryOptions`.
+				"queryOptions" : {}, // The sibling `datasource` property overrides any defined datasource in `queryOptions`.
+				"cleanup" : {
+					"enabled" : false,
+					"frequency" : ( task ) => {
+						task.everyDay();
+					},
+					"criteria" : ( q ) => {
+						q.where(
+							"failedDate",
+							"<=",
+							dateAdd( "d", -30, now() )
+						); // 30 days
+					}
+				}
 			},
 			// Flag to allow restricting Job interceptor execution using a `jobPattern` annotation.
 			"registerJobInterceptorRestrictionAspect" : false
