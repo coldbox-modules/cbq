@@ -1,6 +1,7 @@
 component {
 
 	property name="settings" inject="coldbox:moduleSettings:cbq";
+	property name="javaInstant" inject="java:java.time.Instant";
 	property name="qb" inject="provider:QueryBuilder@qb";
 	property name="config" inject="provider:Config@cbq";
 
@@ -59,11 +60,21 @@ component {
 					},
 					"exceptionStackTrace" : arguments.data.exception.stackTrace,
 					"exception" : serializeJSON( arguments.data.exception ),
-					"failedDate" : now(),
+					"failedDate" : getCurrentUnixTimestamp(),
 					"originalId" : arguments.data.job.getId()
 				},
 				options = options
 			);
+	}
+
+	/**
+	 * Get the "available at" UNIX timestamp.
+	 *
+	 * @delay  The delay, in seconds, to add to the current timestamp
+	 * @return int
+	 */
+	private numeric function getCurrentUnixTimestamp( numeric delay = 0 ) {
+		return variables.javaInstant.now().getEpochSecond() + arguments.delay;
 	}
 
 }

@@ -27,9 +27,9 @@ component accessors="true" extends="AbstractQueueProvider" {
 	public any function listen( required WorkerPool pool ) {
 		registerWorkerTask( arguments.pool );
 
-		param variables.settings.cleanup = {};
-		param variables.settings.cleanup.enabled = false;
-		if ( variables.settings.cleanup.enabled ) {
+		param variables.properties.cleanup = {};
+		param variables.properties.cleanup.enabled = false;
+		if ( variables.properties.cleanup.enabled ) {
 			registerCleanupTask( arguments.pool );
 		}
 	}
@@ -121,15 +121,15 @@ component accessors="true" extends="AbstractQueueProvider" {
 	}
 
 	private any function registerCleanupTask( required WorkerPool pool ) {
-		if ( isNull( variables.settings.cleanup.criteria ) ) {
-			variables.settings.cleanup.criteria = function( q, currentUnixTimestamp ) {
-				q.where( function( q ) {
-					q3.where(
+		if ( isNull( variables.properties.cleanup.criteria ) ) {
+			variables.properties.cleanup.criteria = function( qb, currentUnixTimestamp ) {
+				qb.where( function( q ) {
+					q.where(
 						"completedDate",
 						"<=",
 						currentUnixTimestamp - ( 60 * 60 * 24 * 7 )
 					); // one week
-					q3.orWhere(
+					q.orWhere(
 						"failedDate",
 						"<=",
 						currentUnixTimestamp - ( 60 * 60 * 24 * 7 )
@@ -143,15 +143,15 @@ component accessors="true" extends="AbstractQueueProvider" {
 		var cleanupTask = variables.schedulerService.getSchedulers()[ "cbScheduler@cbq" ]
 			.task( "cbq:db-cleanup-watcher:#arguments.pool.getUniqueId()#" )
 			.call( function() {
-				var deleteQuery = newQuery()
+				var deleteQuery = newQuery();
+				variables.properties.cleanup.criteria( deleteQuery, getCurrentUnixTimestamp() );
+				// These restrictions are added after to prevent any mistakes from the user erasing them.
+				deleteQuery
 					.table( variables.tableName )
 					.where( function( q ) {
-						q2.whereNotNull( "completedDate" );
-						q2.orWhereNotNull( "failedDate" );
+						q.whereNotNull( "completedDate" );
+						q.orWhereNotNull( "failedDate" );
 					} );
-
-				variables.settings.cleanup.criteria( deleteQuery, getCurrentUnixTimestamp() );
-
 				return deleteQuery.delete( options = variables.defaultQueryOptions ).result.recordCount;
 			} )
 			.before( function() {
@@ -176,12 +176,12 @@ component accessors="true" extends="AbstractQueueProvider" {
 				}
 			} );
 
-		if ( isNull( variables.settings.cleanup.frequency ) ) {
-			variables.settings.cleanup.frequency = function( task ) {
+		if ( isNull( variables.properties.cleanup.frequency ) ) {
+			variables.properties.cleanup.frequency = function( task ) {
 				task.everyDay();
 			};
 		}
-		variables.settings.cleanup.frequency( cleanupTask );
+		variables.properties.cleanup.frequency( cleanupTask );
 
 		variables.log.debug( "Starting DB Task for cleaning up completed and failed worker pool jobs [#arguments.pool.getUniqueId()#]" );
 	}
@@ -329,7 +329,6 @@ component accessors="true" extends="AbstractQueueProvider" {
 			.when( !isNull( arguments.pool ), ( q ) => {
 				q.where( "reservedBy", pool.getUniqueId() );
 			} )
-			.where( "reservedBy", arguments.pool.getUniqueId() )
 			.where( ( q ) => {
 				q.whereNull( "completedDate" );
 				q.whereNull( "failedDate" );
