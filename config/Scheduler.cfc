@@ -119,12 +119,13 @@ component {
 		var cleanupTask = task( "cbq:db-cleanup-batches" )
 			.call( () => {
 				var deleteQuery = newQuery()
-                    .table( variables.settings.batchRepositoryProperties.tableName )
+                variables.settings.batchRepositoryProperties.cleanup.criteria( deleteQuery, getCurrentUnixTimestamp() );
+				// These restrictions are added after to prevent any mistakes from the user erasing them.
+				deleteQuery.table( variables.settings.batchRepositoryProperties.tableName )
                     .where( ( q2 ) => {
                         q2.whereNotNull( "cancelledDate" );
                         q2.orWhereNotNull( "completedDate" );
                     } );
-                variables.settings.batchRepositoryProperties.cleanup.criteria( deleteQuery, getCurrentUnixTimestamp() );
 				return deleteQuery.delete( options = options ).result.recordCount;
 			} )
 			.before( function() {

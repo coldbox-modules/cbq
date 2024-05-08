@@ -143,15 +143,15 @@ component accessors="true" extends="AbstractQueueProvider" {
 		var cleanupTask = variables.schedulerService.getSchedulers()[ "cbScheduler@cbq" ]
 			.task( "cbq:db-cleanup-watcher:#arguments.pool.getUniqueId()#" )
 			.call( function() {
-				var deleteQuery = newQuery()
+				var deleteQuery = newQuery();
+				variables.settings.cleanup.criteria( deleteQuery, getCurrentUnixTimestamp() );
+				// These restrictions are added after to prevent any mistakes from the user erasing them.
+				deleteQuery
 					.table( variables.tableName )
 					.where( function( q ) {
 						q2.whereNotNull( "completedDate" );
 						q2.orWhereNotNull( "failedDate" );
 					} );
-
-				variables.settings.cleanup.criteria( deleteQuery, getCurrentUnixTimestamp() );
-
 				return deleteQuery.delete( options = variables.defaultQueryOptions ).result.recordCount;
 			} )
 			.before( function() {
