@@ -66,11 +66,11 @@ component {
 					"frequency" : ( task ) => {
 						task.everyDay();
 					},
-					"criteria" : ( q ) => {
+					"criteria" : ( q, currentUnixTimestamp ) => {
 						q.where(
 							"failedDate",
 							"<=",
-							dateAdd( "d", -30, now() )
+							currentUnixTimestamp - ( 60 * 60 * 24 * 30 )
 						); // 30 days
 					}
 				}

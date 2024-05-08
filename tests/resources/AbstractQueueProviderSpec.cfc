@@ -12,7 +12,7 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
                 $spy( provider, "releaseJob" );
                 var workerPool = makeWorkerPool( provider );
                 var job = getInstance( "ReleaseTestJob" )
-                    .setCurrentAttempt( 1 )
+                    .setCurrentAttempt( 0 )
                     .setId( randRange( 1, 1000 ) )
                     .setMaxAttempts( 2 );
 
