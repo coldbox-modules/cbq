@@ -1,6 +1,7 @@
 component {
 
 	property name="settings" inject="coldbox:moduleSettings:cbq";
+	property name="javaInstant" inject="java:java.time.Instant";
 	property name="qb" inject="provider:QueryBuilder@qb";
 	property name="config" inject="provider:Config@cbq";
 

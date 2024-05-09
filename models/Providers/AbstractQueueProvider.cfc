@@ -102,6 +102,7 @@ component accessors="true" {
 		required WorkerPool pool,
 		function afterJobHook
 	) {
+		arguments.job.setCurrentAttempt( arguments.job.getCurrentAttempt() + 1 );
 		return variables.async
 			.newFuture( function() {
 				if ( variables.log.canDebug() ) {

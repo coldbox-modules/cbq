@@ -329,7 +329,6 @@ component accessors="true" extends="AbstractQueueProvider" {
 			.when( !isNull( arguments.pool ), ( q ) => {
 				q.where( "reservedBy", pool.getUniqueId() );
 			} )
-			.where( "reservedBy", arguments.pool.getUniqueId() )
 			.where( ( q ) => {
 				q.whereNull( "completedDate" );
 				q.whereNull( "failedDate" );
