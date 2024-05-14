@@ -356,7 +356,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 						"null" : true,
 						"nulls" : true
 					},
-					"availableDate" : getCurrentUnixTimestamp( getBackoffForJob( arguments.job, arguments.pool ) ),
+					"availableDate" : getCurrentUnixTimestamp( getTimeoutForJob( arguments.job, arguments.pool ) ),
 					"reservedDate" : {
 						"value" : "",
 						"null" : true,
