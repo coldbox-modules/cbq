@@ -393,13 +393,21 @@ component accessors="true" extends="AbstractQueueProvider" {
 							variables.getCurrentUnixTimestamp()
 						);
 				} );
-				// is reserved but expired
-				q1.orWhere( ( q4 ) => {
-					q4.where(
-						"reservedDate",
-						"<=",
-						variables.getCurrentUnixTimestamp() - pool.getTimeout()
-					);
+				// past the reserved date
+				q1.orWhere(
+					"reservedDate",
+					"<=",
+					variables.getCurrentUnixTimestamp() - pool.getTimeout()
+				);
+				// reserved by a worker but never released
+				q1.orWhere( ( q3 ) => {
+					q3.whereNull( "reservedDate" )
+						.whereNotNull( "reservedBy" )
+						.where(
+							"availableDate",
+							"<=",
+							variables.getCurrentUnixTimestamp()
+						);
 				} );
 			} )
 			.orderByRaw( "CASE WHEN reservedBy = ? THEN 1 ELSE 2 END ASC", [ arguments.pool.getUniqueId() ] )
