@@ -1,3 +1,12 @@
+# v3.0.1
+## 16 May 2024 — 15:48:35 UTC
+
+### fix
+
++ __DBProvider:__ Fix releasing job timeouts using the wrong value
+ ([276a473](https://github.com/coldbox-modules/cbq/commit/276a473879cb3a354fed911094aa59ad046a2b10))
+
+
 # v3.0.0
 ## 16 May 2024 — 14:58:33 UTC
 
