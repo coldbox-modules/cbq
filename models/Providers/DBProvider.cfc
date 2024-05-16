@@ -287,6 +287,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 			.update(
 				values = {
 					"reservedDate" : getCurrentUnixTimestamp(),
+					"availableDate" : getCurrentUnixTimestamp( getTimeoutForJob( arguments.job, arguments.pool ) ),
 					"attempts" : arguments.job.getCurrentAttempt() + 1
 				},
 				options = variables.defaultQueryOptions
@@ -356,7 +357,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 						"null" : true,
 						"nulls" : true
 					},
-					"availableDate" : getCurrentUnixTimestamp( getTimeoutForJob( arguments.job, arguments.pool ) ),
+					"availableDate" : getCurrentUnixTimestamp( getBackoffForJob( arguments.job, arguments.pool ) ),
 					"reservedDate" : {
 						"value" : "",
 						"null" : true,
