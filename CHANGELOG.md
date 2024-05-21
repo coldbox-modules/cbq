@@ -1,3 +1,12 @@
+# v3.0.2
+## 21 May 2024 — 14:01:55 UTC
+
+### fix
+
++ __FailedJobs:__ Log errors logging failed jobs
+ ([fd4bffa](https://github.com/coldbox-modules/cbq/commit/fd4bffab61a5046b8baf263e37666292e0cdd760))
+
+
 # v3.0.1
 ## 16 May 2024 — 15:48:35 UTC
 
