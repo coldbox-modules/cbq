@@ -31,40 +31,50 @@ component {
 		}
 
 		param variables.settings.logFailedJobsProperties.tableName = "cbq_failed_jobs";
-		qb.table( variables.settings.logFailedJobsProperties.tableName )
-			.insert(
-				values = {
-					"connection" : connectionName,
-					"queue" : queueName,
-					"mapping" : arguments.data.job.getMapping(),
-					"memento" : serializeJSON( arguments.data.job.getMemento() ),
-					"properties" : serializeJSON( arguments.data.job.getProperties() ),
-					"exceptionType" : {
-						"value" : arguments.data.exception.type ?: "",
-						"cfsqltype" : "CF_SQL_VARCHAR",
-						"null" : ( arguments.data.exception.type ?: "" ) == "",
-						"nulls" : ( arguments.data.exception.type ?: "" ) == ""
-					},
-					"exceptionMessage" : arguments.data.exception.message,
-					"exceptionDetail" : {
-						"value" : arguments.data.exception.detail ?: "",
-						"cfsqltype" : "CF_SQL_VARCHAR",
-						"null" : ( arguments.data.exception.detail ?: "" ) == "",
-						"nulls" : ( arguments.data.exception.detail ?: "" ) == ""
-					},
-					"exceptionExtendedInfo" : {
-						"value" : arguments.data.exception.extendedInfo ?: "",
-						"cfsqltype" : "CF_SQL_VARCHAR",
-						"null" : ( arguments.data.exception.extendedInfo ?: "" ) == "",
-						"nulls" : ( arguments.data.exception.extendedInfo ?: "" ) == ""
-					},
-					"exceptionStackTrace" : arguments.data.exception.stackTrace,
-					"exception" : serializeJSON( arguments.data.exception ),
-					"failedDate" : getCurrentUnixTimestamp(),
-					"originalId" : arguments.data.job.getId()
-				},
-				options = options
-			);
+		var log = {
+			"connection" : connectionName,
+			"queue" : queueName,
+			"mapping" : arguments.data.job.getMapping(),
+			"memento" : serializeJSON( arguments.data.job.getMemento() ),
+			"properties" : serializeJSON( arguments.data.job.getProperties() ),
+			"exceptionType" : {
+				"value" : arguments.data.exception.type ?: "",
+				"cfsqltype" : "CF_SQL_VARCHAR",
+				"null" : ( arguments.data.exception.type ?: "" ) == "",
+				"nulls" : ( arguments.data.exception.type ?: "" ) == ""
+			},
+			"exceptionMessage" : arguments.data.exception.message,
+			"exceptionDetail" : {
+				"value" : arguments.data.exception.detail ?: "",
+				"cfsqltype" : "CF_SQL_VARCHAR",
+				"null" : ( arguments.data.exception.detail ?: "" ) == "",
+				"nulls" : ( arguments.data.exception.detail ?: "" ) == ""
+			},
+			"exceptionExtendedInfo" : {
+				"value" : arguments.data.exception.extendedInfo ?: "",
+				"cfsqltype" : "CF_SQL_VARCHAR",
+				"null" : ( arguments.data.exception.extendedInfo ?: "" ) == "",
+				"nulls" : ( arguments.data.exception.extendedInfo ?: "" ) == ""
+			},
+			"exceptionStackTrace" : arguments.data.exception.stackTrace,
+			"exception" : serializeJSON( arguments.data.exception ),
+			"failedDate" : { "value": getCurrentUnixTimestamp(), "cfsqltype": "CF_SQL_BIGINT" },
+			"originalId" : { "value": arguments.data.job.getId(), "cfsqltype": "CF_SQL_BIGINT" }
+		};
+
+		try {
+			qb.table( variables.settings.logFailedJobsProperties.tableName )
+				.insert(
+					values = log,
+					options = options
+				);
+		} catch ( any e ) {
+			log.error( "Failed to log failed job: #e.message#", {
+				"log": log,
+				"exception": e
+			} );
+			rethrow;
+		}
 	}
 
 	/**
