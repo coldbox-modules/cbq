@@ -71,7 +71,7 @@ component {
 				);
 		} catch ( any e ) {
 			log.error( "Failed to log failed job: #e.message#", {
-				"log": log,
+				"log": logData,
 				"exception": e
 			} );
 			rethrow;
