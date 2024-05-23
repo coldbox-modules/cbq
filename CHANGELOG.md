@@ -1,3 +1,12 @@
+# v3.0.7
+## 23 May 2024 — 21:34:49 UTC
+
+### fix
+
++ __SyncProvider:__ Un-nest chains to prevent stack overflows
+ ([b89c81a](https://github.com/coldbox-modules/cbq/commit/b89c81a5c47f6d353a0d46110eba5739bb16e4c6))
+
+
 # v3.0.6
 ## 23 May 2024 — 17:07:59 UTC
 
