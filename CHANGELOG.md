@@ -1,3 +1,12 @@
+# v3.0.3
+## 23 May 2024 — 16:40:10 UTC
+
+### fix
+
++ __FailedJobs:__ Make originalId able to track all provider ids
+ ([ecbade0](https://github.com/coldbox-modules/cbq/commit/ecbade0102f93d27fd2096e392f0dbe9371b27fb))
+
+
 # v3.0.2
 ## 21 May 2024 — 14:01:55 UTC
 
