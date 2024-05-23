@@ -4,6 +4,7 @@ component {
 	property name="javaInstant" inject="java:java.time.Instant";
 	property name="qb" inject="provider:QueryBuilder@qb";
 	property name="config" inject="provider:Config@cbq";
+	property name="log" inject="logbox:logger:{this}";
 
 	function onCBQJobFailed( event, data ) {
 		if ( !variables.settings.logFailedJobs ) {
