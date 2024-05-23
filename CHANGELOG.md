@@ -1,3 +1,12 @@
+# v3.0.5
+## 23 May 2024 — 17:03:25 UTC
+
+### fix
+
++ __FailedJobs:__ Inject logbox into the interceptor
+ ([f759d4f](https://github.com/coldbox-modules/cbq/commit/f759d4ffa50af9a1f4f07bb9a20b15fbb0039de4))
+
+
 # v3.0.4
 ## 23 May 2024 — 16:58:00 UTC
 
