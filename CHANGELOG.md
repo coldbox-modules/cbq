@@ -1,3 +1,12 @@
+# v3.0.6
+## 23 May 2024 — 17:07:59 UTC
+
+### fix
+
++ __FailedJobs:__ Fix variable name
+ ([b6e5f40](https://github.com/coldbox-modules/cbq/commit/b6e5f40dc993db45e7efdf311fa24152a65a712c))
+
+
 # v3.0.5
 ## 23 May 2024 — 17:03:25 UTC
 
