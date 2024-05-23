@@ -13,14 +13,25 @@ component accessors="true" extends="AbstractQueueProvider" {
 			return;
 		}
 
-		marshalJob(
-			deserializeJob(
-				arguments.payload,
-				createUUID(),
-				arguments.attempts
-			),
-			variables.pool
+		var firstJob = deserializeJob(
+			arguments.payload,
+			createUUID(),
+			arguments.attempts
 		);
+
+		var chain = firstJob
+			.getChained()
+			.map( ( payload ) => deserializeJob(
+				serializeJSON( payload ),
+				createUUID(),
+				1
+			) );
+		firstJob.setChained( [] );
+		arrayPrepend( chain, firstJob );
+
+		for ( var job in chain ) {
+			marshalJob( job, variables.pool );
+		}
 		return this;
 	}
 
@@ -92,7 +103,6 @@ component accessors="true" extends="AbstractQueueProvider" {
 			afterJobRun( job, pool );
 
 			ensureSuccessfulBatchJobIsRecorded( job, pool );
-			dispatchNextJobInChain( job, pool );
 		} catch ( any e ) {
 			// log failed job
 			if ( log.canError() ) {
