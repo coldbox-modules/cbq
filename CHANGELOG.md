@@ -1,3 +1,12 @@
+# v3.0.4
+## 23 May 2024 — 16:58:00 UTC
+
+### fix
+
++ __FailedJobs:__ Use CF_SQL_VARCHAR as the SQL type for `originalId`
+ ([041f34b](https://github.com/coldbox-modules/cbq/commit/041f34bcdada079647c226f2bc812293b4c44564))
+
+
 # v3.0.3
 ## 23 May 2024 — 16:40:10 UTC
 
