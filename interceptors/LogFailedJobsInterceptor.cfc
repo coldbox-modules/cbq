@@ -31,7 +31,7 @@ component {
 		}
 
 		param variables.settings.logFailedJobsProperties.tableName = "cbq_failed_jobs";
-		var log = {
+		var logData = {
 			"connection" : connectionName,
 			"queue" : queueName,
 			"mapping" : arguments.data.job.getMapping(),
@@ -59,13 +59,13 @@ component {
 			"exceptionStackTrace" : arguments.data.exception.stackTrace,
 			"exception" : serializeJSON( arguments.data.exception ),
 			"failedDate" : { "value": getCurrentUnixTimestamp(), "cfsqltype": "CF_SQL_BIGINT" },
-			"originalId" : { "value": arguments.data.job.getId(), "cfsqltype": "CF_SQL_BIGINT" }
+			"originalId" : { "value": arguments.data.job.getId(), "cfsqltype": "CF_SQL_VARCHAR" }
 		};
 
 		try {
 			qb.table( variables.settings.logFailedJobsProperties.tableName )
 				.insert(
-					values = log,
+					values = logData,
 					options = options
 				);
 		} catch ( any e ) {
