@@ -1,3 +1,11 @@
+# v3.0.8
+## 12 Jun 2024 — 17:21:18 UTC
+
+### fix
+
++ __SyncProvider:__ Add chained jobs to the Sync job memento. ([b1af5aa](https://github.com/coldbox-modules/cbq/commit/b1af5aae205b06e3c749be26b200670f416c90e6))
+
+
 # v3.0.7
 ## 23 May 2024 — 21:34:49 UTC
 
