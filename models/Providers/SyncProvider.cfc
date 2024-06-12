@@ -19,15 +19,22 @@ component accessors="true" extends="AbstractQueueProvider" {
 			arguments.attempts
 		);
 
-		var chain = firstJob
-			.getChained()
-			.map( ( payload ) => deserializeJob(
+		var chain = firstJob.getChained();
+		var firstJobPayload = firstJob.getMemento();
+		firstJobPayload.chained = [];
+		arrayPrepend( chain, firstJobPayload );
+		chain = chain.map( ( payload, i, arr ) => {
+			payload.chained = arr.len() >= i + 1 ? arr.slice( i + 1 ) : [];
+			payload.chained = payload.chained.map( ( p ) => {
+				p.chained = [];
+				return p;
+			} );
+			return deserializeJob(
 				serializeJSON( payload ),
 				createUUID(),
 				1
-			) );
-		firstJob.setChained( [] );
-		arrayPrepend( chain, firstJob );
+			);
+		} );
 
 		for ( var job in chain ) {
 			marshalJob( job, variables.pool );
@@ -48,7 +55,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 	public void function marshalJob( required AbstractJob job, required WorkerPool pool ) {
 		try {
 			if ( variables.log.canDebug() ) {
-				variables.log.debug( "Marshaling job ###arguments.job.getId()#", arguments.job.getMemento() );
+				// variables.log.debug( "Marshaling job ###arguments.job.getId()#", arguments.job.getMemento() );
 			}
 
 			beforeJobRun( arguments.job );
@@ -106,13 +113,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 		} catch ( any e ) {
 			// log failed job
 			if ( log.canError() ) {
-				log.error(
-					"Exception when running job: #e.message#",
-					{
-						"job" : job.getMemento(),
-						"exception" : e
-					}
-				);
+				log.error( "Exception when running job: #e.message#" );
 			}
 
 			variables.interceptorService.announce( "onCBQJobException", { "job" : job, "exception" : e } );
