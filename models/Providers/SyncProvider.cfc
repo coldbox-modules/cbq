@@ -36,8 +36,15 @@ component accessors="true" extends="AbstractQueueProvider" {
 			);
 		} );
 
-		for ( var job in chain ) {
-			marshalJob( job, variables.pool );
+		for ( var i = 1; i <= chain.len(); ) {
+			var job = chain[ i ];
+			try {
+				marshalJob( job, variables.pool );
+				i++;
+			} catch ( cbq.SyncProviderJobFailed e ) {
+				job.setCurrentAttempt( job.getCurrentAttempt() + 1 );
+				sleep( getBackoffForJob( job, variables.pool ) * 1000 );
+			}
 		}
 		return this;
 	}
@@ -147,6 +154,13 @@ component accessors="true" extends="AbstractQueueProvider" {
 				rethrow;
 			}
 		}
+	}
+
+	public void function releaseJob( required AbstractJob job, required WorkerPool pool ) {
+		throw(
+			type = "cbq.SyncProviderJobFailed",
+			message = "Job failed on attempt #arguments.job.getCurrentAttempt()# and was released."
+		);
 	}
 
 }
