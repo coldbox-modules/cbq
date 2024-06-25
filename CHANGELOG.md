@@ -1,3 +1,11 @@
+# v3.0.9
+## 25 Jun 2024 — 16:46:56 UTC
+
+### fix
+
++ __SyncProvider:__ Fix stack overflow when releasing a job too many times ([5997087](https://github.com/coldbox-modules/cbq/commit/599708759cbb1f90e30a2f21e3e3ab2d8a1cca1d))
+
+
 # v3.0.8
 ## 12 Jun 2024 — 17:21:18 UTC
 
