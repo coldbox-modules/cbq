@@ -6,6 +6,7 @@ component {
     function configure() {
         registerScaleWorkerPoolsTask();
 
+        param variables.settings.defaultWorkerShutdownTimeout = 60;
         param variables.settings.logFailedJobsProperties = {};
         param variables.settings.logFailedJobsProperties.cleanup = {};
         param variables.settings.logFailedJobsProperties.cleanup.enabled = false;
@@ -153,7 +154,7 @@ component {
 		variables.settings.batchRepositoryProperties.cleanup.frequency( cleanupTask );
     }
 
-	function onShutdown( boolean force = false, numeric timeout = variables.shutdownTimeout ) {
+	function onShutdown( boolean force = false, numeric timeout = variables.settings.defaultWorkerShutdownTimeout ) {
 		systemOutput( "Shutting down cbq scheduler", true );
 		if ( variables.log.canDebug() ) {
 			variables.log.debug( "Shutting down cbq scheduler", {
