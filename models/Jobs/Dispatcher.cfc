@@ -40,8 +40,6 @@ component singleton accessors="true" {
 		param arguments.connectionName = variables.config.getDefaultConnectionName();
 		var connection = variables.config.getConnection( connectionName );
 
-		param queueName = connection.getDefaultQueue();
-
 		for ( var job in arguments.jobs ) {
 			variables.interceptorService.announce(
 				"onCBQJobAdded",
@@ -53,7 +51,7 @@ component singleton accessors="true" {
 
 			job.setCurrentAttempt( 0 );
 			connection.push(
-				queueName = queueName,
+				queueName = arguments.queueName ?: job.getQueue() ?: connection.getDefaultQueue(),
 				payload = serializeJSON( job.getMemento() ),
 				attempts = 0
 			);
