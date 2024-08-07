@@ -1,3 +1,12 @@
+# v3.0.11
+## 07 Aug 2024 — 18:40:35 UTC
+
+### other
+
++ __\*:__ Fix missing shutdownTimeout variable
+ ([9bb553c](https://github.com/coldbox-modules/cbq/commit/9bb553c8b7ce7e0d1217e0578469928363557dab))
+
+
 # v3.0.10
 ## 07 Aug 2024 — 16:37:29 UTC
 
