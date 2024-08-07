@@ -1,3 +1,12 @@
+# v3.0.10
+## 07 Aug 2024 — 16:37:29 UTC
+
+### fix
+
++ __Batch:__ Don't override Batch job queues unless one is specifically requested
+ ([6926067](https://github.com/coldbox-modules/cbq/commit/6926067c3a28655a80ab967a92cfdd64e1af23c3))
+
+
 # v3.0.9
 ## 25 Jun 2024 — 16:46:56 UTC
 
