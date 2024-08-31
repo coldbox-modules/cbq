@@ -158,7 +158,8 @@ component {
     }
 
 	function onShutdown( boolean force = false, numeric timeout = variables.settings.defaultWorkerShutdownTimeout ) {
-		systemOutput( "Shutting down cbq scheduler", true );
+		var stdout = createObject( "java", "java.lang.System" ).out;
+		stdout.println( "Shutting down cbq scheduler" );
 		if ( variables.log.canDebug() ) {
 			variables.log.debug( "Shutting down cbq scheduler", {
 				"force": force,
