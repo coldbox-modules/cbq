@@ -1,3 +1,11 @@
+# v3.0.12
+## 03 Sep 2024 — 15:53:21 UTC
+
+### other
+
++ __\*:__ fix: Update syntax for Lucee 6.1 and ACF ([a4f4502](https://github.com/coldbox-modules/cbq/commit/a4f4502e443a14cad93d13259a96f4a52681a865))
+
+
 # v3.0.11
 ## 07 Aug 2024 — 18:40:35 UTC
 
