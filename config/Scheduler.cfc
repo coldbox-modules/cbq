@@ -44,9 +44,10 @@ component {
     }
 
     private any function registerCleanupFailedJobLogTask() {
-        param variables.settings.logFailedJobsProperties.cleanup.criteria = function( q, currentUnixTimestamp ) {
+		var cleanupCriteria = function( q, currentUnixTimestamp ) {
 			q.where( "failedDate", "<=", currentUnixTimestamp - ( 60 * 60 * 24 * 30 ) ); // 30 days
 		};
+		param variables.settings.logFailedJobsProperties.cleanup.criteria = cleanupCriteria;
 
         param variables.settings.logFailedJobsProperties.tableName = "cbq_failed_jobs";
 
@@ -90,18 +91,19 @@ component {
 				}
 			} );
 
-        param variables.settings.logFailedJobsProperties.cleanup.frequency = function( task ) { task.everyDay(); };
+		var cleanupFrequency = function( task ) { task.everyDay(); };
+		param variables.settings.logFailedJobsProperties.cleanup.frequency = cleanupFrequency;
 		variables.settings.logFailedJobsProperties.cleanup.frequency( cleanupTask );
     }
 
     private any function registerCleanupBatchJobsTask() {
-        param variables.settings.batchRepositoryProperties.cleanup.criteria = function( q, currentUnixTimestamp ) {
+		var cleanupCriteria = function( q, currentUnixTimestamp ) {
 			q.where( ( q3 ) => {
                 q3.where( "cancelledDate", "<=", currentUnixTimestamp - ( 60 * 60 * 24 * 30 ) ); // 30 days
                 q3.orWhere( "completedDate", "<=", currentUnixTimestamp - ( 60 * 60 * 24 * 30 ) ); // 30 week
             } );
 		};
-
+		param variables.settings.batchRepositoryProperties.cleanup.criteria = cleanupCriteria;
         param variables.settings.batchRepositoryProperties.tableName = "cbq_batches";
 
         var options = {};
@@ -150,12 +152,14 @@ component {
 				}
 			} );
 
-        param variables.settings.batchRepositoryProperties.cleanup.frequency = function( task ) { task.everyDay(); };
+        var cleanupFrequency = function( task ) { task.everyDay(); };
+		param variables.settings.batchRepositoryProperties.cleanup.frequency = cleanupFrequency;
 		variables.settings.batchRepositoryProperties.cleanup.frequency( cleanupTask );
     }
 
 	function onShutdown( boolean force = false, numeric timeout = variables.settings.defaultWorkerShutdownTimeout ) {
-		systemOutput( "Shutting down cbq scheduler", true );
+		var stdout = createObject( "java", "java.lang.System" ).out;
+		stdout.println( "Shutting down cbq scheduler" );
 		if ( variables.log.canDebug() ) {
 			variables.log.debug( "Shutting down cbq scheduler", {
 				"force": force,
