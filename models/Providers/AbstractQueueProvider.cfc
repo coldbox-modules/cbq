@@ -209,7 +209,7 @@ component accessors="true" {
 						invoke(
 							job,
 							"onFailure",
-							{ "excpetion" : e }
+							{ "exception" : e }
 						);
 					}
 
