@@ -1,3 +1,11 @@
+# v3.0.13
+## 20 Sep 2024 — 15:39:44 UTC
+
+### other
+
++ __\*:__ fix: Replace typo excpetion with exception ([56cdd07](https://github.com/coldbox-modules/cbq/commit/56cdd07d12d59080f554e818a35ecae422ec2f26))
+
+
 # v3.0.12
 ## 03 Sep 2024 — 15:53:21 UTC
 
