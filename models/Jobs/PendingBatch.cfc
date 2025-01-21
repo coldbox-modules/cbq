@@ -98,7 +98,7 @@ component accessors="true" extends="AbstractJob" {
 	 *
 	 * @return      The PendingBatch instance.
 	 */
-	public PendingBatch function catch(
+	public PendingBatch function onFailure(
 		required any job,
 		struct properties = {},
 		array chain = [],
@@ -130,7 +130,7 @@ component accessors="true" extends="AbstractJob" {
 	 *
 	 * @return      The PendingBatch instance.
 	 */
-	public PendingBatch function finally(
+	public PendingBatch function onComplete(
 		required any job,
 		struct properties = {},
 		array chain = [],
@@ -180,6 +180,26 @@ component accessors="true" extends="AbstractJob" {
 	public cbq function getCBQ() provider="cbq@cbq" {
 	}
 	public cbq function getRepository() provider="DBBatchRepository@cbq" {
+	}
+
+	public any function onMissingMethod( required string missingMethodName, struct missingMethodArguments = {} ) {
+		if ( missingMethodName == "finally" ) {
+			return invoke(
+				this,
+				"onComplete",
+				arguments.missingMethodArguments
+			);
+		}
+
+		if ( missingMethodName == "catch" ) {
+			return invoke(
+				this,
+				"onFailure",
+				arguments.missingMethodArguments
+			);
+		}
+
+		throw( "No method [#missingMethodName#] found on [PendingBatch]" );
 	}
 
 }
