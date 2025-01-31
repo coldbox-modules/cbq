@@ -1,3 +1,11 @@
+# v3.0.14
+## 31 Jan 2025 — 17:40:29 UTC
+
+### other
+
++ __\*:__ ci: Adds Coldbox 7 Tests and Experimental Matrix (#18) ([1eb27a3](https://github.com/coldbox-modules/cbq/commit/1eb27a3145f02d7a8877845c4d089b5a9032b373))
+
+
 # v3.0.13
 ## 20 Sep 2024 — 15:39:44 UTC
 
