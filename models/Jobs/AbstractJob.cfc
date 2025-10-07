@@ -27,6 +27,8 @@ component accessors="true" {
 
 	property name="properties";
 
+	property name="providerContext";
+
 	function init() {
 		variables.properties = {};
 		variables.chained = [];
