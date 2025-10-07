@@ -2,7 +2,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 
 	public any function push(
 		required string queueName,
-		required string payload,
+		required AbstractJob job,
 		numeric delay = 0,
 		numeric attempts = 0
 	) {
@@ -13,14 +13,13 @@ component accessors="true" extends="AbstractQueueProvider" {
 			return;
 		}
 
-		var firstJob = deserializeJob(
-			arguments.payload,
-			createUUID(),
-			arguments.attempts
-		);
+		arguments.job.setId( createUUID() );
+		if ( !isNull( arguments.attempts ) ) {
+			arguments.job.setCurrentAttempt( arguments.attempts );
+		}
 
-		var chain = firstJob.getChained();
-		var firstJobPayload = firstJob.getMemento();
+		var chain = arguments.job.getChained();
+		var firstJobPayload = arguments.job.getMemento();
 		firstJobPayload.chained = [];
 		arrayPrepend( chain, firstJobPayload );
 		chain = chain.map( ( payload, i, arr ) => {

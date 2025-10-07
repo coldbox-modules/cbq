@@ -24,7 +24,7 @@ component singleton accessors="true" {
 		arguments.job.setCurrentAttempt( 0 );
 		connection.push(
 			queueName = queueName,
-			payload = serializeJSON( arguments.job.getMemento() ),
+			job = arguments.job,
 			delay = delay,
 			attempts = 0
 		);
@@ -52,7 +52,7 @@ component singleton accessors="true" {
 			job.setCurrentAttempt( 0 );
 			connection.push(
 				queueName = arguments.queueName ?: job.getQueue() ?: connection.getDefaultQueue(),
-				payload = serializeJSON( job.getMemento() ),
+				job = job,
 				attempts = 0
 			);
 		}

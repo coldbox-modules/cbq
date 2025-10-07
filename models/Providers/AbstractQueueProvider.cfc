@@ -14,7 +14,7 @@ component accessors="true" {
 	 * Persists a serialized job to the Queue Connection
 	 *
 	 * @queueName The queue name for the job.
-	 * @payload   The serialized job string.
+	 * @job       The Job to serialize and push to the queue.
 	 * @delay     The delay (in seconds) before working the job.
 	 * @attempts  The current attempt number.
 	 *
@@ -22,7 +22,7 @@ component accessors="true" {
 	 */
 	public any function push(
 		required string queueName,
-		required string payload,
+		required AbstractJob job,
 		numeric delay = 0,
 		numeric attempts = 0
 	) {

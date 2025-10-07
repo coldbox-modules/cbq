@@ -212,7 +212,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 
 	public any function push(
 		required string queueName,
-		required string payload,
+		required AbstractJob job,
 		numeric delay = 0,
 		numeric attempts = 0
 	) {
@@ -221,7 +221,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 			"attempts" : arguments.attempts,
 			"availableDate" : getCurrentUnixTimestamp( arguments.delay ),
 			"createdDate" : getCurrentUnixTimestamp(),
-			"payload" : arguments.payload
+			"payload" : serializeJSON( arguments.job.getMemento() )
 		};
 
 		if ( variables.log.canDebug() ) {

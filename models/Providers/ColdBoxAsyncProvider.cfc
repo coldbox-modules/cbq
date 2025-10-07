@@ -4,7 +4,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 
 	public any function push(
 		required string queueName,
-		required string payload,
+		required AbstractJob job,
 		numeric delay = 0,
 		numeric attempts = 0
 	) {
@@ -24,7 +24,11 @@ component accessors="true" extends="AbstractQueueProvider" {
 				return true;
 			}, workerPool.getExecutor() )
 			.then( function() {
-				return marshalJob( deserializeJob( payload, createUUID(), attempts ), workerPool );
+				job.setId( createUUID() );
+				if ( !isNull( arguments.currentAttempt ) ) {
+					job.setCurrentAttempt( attempts );
+				}
+				return marshalJob( job, workerPool );
 			} )
 			.onException( function( e ) {
 				// log failed job

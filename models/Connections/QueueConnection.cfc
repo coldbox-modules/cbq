@@ -6,7 +6,7 @@ component accessors="true" {
 
 	public QueueConnection function push(
 		required string queueName,
-		required string payload,
+		required AbstractJob job,
 		numeric delay = 0,
 		numeric attempts = 0
 	) {

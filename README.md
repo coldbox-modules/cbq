@@ -21,7 +21,7 @@ A queue provider is how a queue connection connects to a backend service like Re
 
 A queue provider **must** extend the `AbstractQueueProvider` and implement the required abstract methods:
 
-+ `public any function push( required string queue, required string payload, numeric delay, numeric attempt )`
++ `public any function push( required string queue, required AbstractJob job, numeric delay, numeric attempt )`
 + `public function function startWorker( required WorkerPool pool )`
 
 Additionally, the Queue Provider can use the following hooks to do additional processing or cleanup:
