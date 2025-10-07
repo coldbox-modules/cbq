@@ -197,15 +197,40 @@ component accessors="true" {
 				);
 
 				var jobMaxAttempts = getMaxAttemptsForJob( job, pool );
-				if ( jobMaxAttempts == 0 || job.getCurrentAttempt() < jobMaxAttempts ) {
-					if ( jobMaxAttempts == 0 ) {
+				if ( job.getIsCancelled() ) {
+					if ( variables.log.canDebug() ) {
+						variables.log.debug( "Job [#job.getId()#] was cancelled. Reason: #job.getCancelledReason()#. Deleting job [#job.getId()#]." );
+					}
+
+					if ( structKeyExists( job, "onFailure" ) ) {
+						invoke(
+							job,
+							"onFailure",
+							{ "exception" : e }
+						);
+					}
+
+					variables.interceptorService.announce( "onCBQJobFailed", { "job" : job, "exception" : e } );
+
+					afterJobFailed( job.getId(), job, pool );
+					ensureFailedBatchJobIsRecorded( job, e );
+
+					variables.log.debug( "Marked job ###job.getId()# as failed after being cancelled." );
+				} else if ( jobMaxAttempts == 0 || job.getCurrentAttempt() < jobMaxAttempts ) {
+					if ( jobMaxAttempts == 0 && variables.log.canDebug() ) {
 						variables.log.debug( "Job ###job.getId()# has a maxAttempts of 0 and will always be released." );
 					}
-					variables.log.debug( "Releasing job ###job.getId()#" );
+					if ( variables.log.canDebug() ) {
+						variables.log.debug( "Releasing job ###job.getId()#" );
+					}
 					releaseJob( job, pool );
-					variables.log.debug( "Released job ###job.getId()#" );
+					if ( variables.log.canDebug() ) {
+						variables.log.debug( "Released job ###job.getId()#" );
+					}
 				} else {
-					variables.log.debug( "Maximum attempts reached. Deleting job ###job.getId()#" );
+					if ( variables.log.canDebug() ) {
+						variables.log.debug( "Maximum attempts reached. Deleting job ###job.getId()#" );
+					}
 
 					if ( structKeyExists( job, "onFailure" ) ) {
 						invoke(

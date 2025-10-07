@@ -21,6 +21,11 @@ component accessors="true" {
 		type="boolean"
 		default="false";
 	property
+		name="isCancelled"
+		type="boolean"
+		default="false";
+	property name="cancelledReason" type="string";
+	property
 		name="isLifecycleJob"
 		type="boolean"
 		default="false";
@@ -75,6 +80,12 @@ component accessors="true" {
 		variables.isReleased = true;
 		setBackoff( arguments.backoff );
 		return this;
+	}
+
+	public void function cancel( string reason = "" ) {
+		variables.isCancelled = true;
+		variables.cancelledReason = arguments.reason;
+		throw( type = "cbq.JobCancelled", message = variables.cancelledReason );
 	}
 
 	public any function getInstance() {
