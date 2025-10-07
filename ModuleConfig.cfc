@@ -85,16 +85,15 @@ component {
 		interceptors = [ { "class" : "#moduleMapping#.interceptors.LogFailedJobsInterceptor" } ];
 	}
 
-	function afterConfigurationLoad() {
-		var configName = "Config@cbq";
+	function afterAspectsLoad() {
 		variables.wirebox
-			.registerNewInstance( name = configName, instancePath = settings.configPath )
+			.registerNewInstance( name = "Config@cbq", instancePath = settings.configPath )
 			.setVirtualInheritance( "BaseConfig@cbq" )
 			.setThreadSafe( true )
 			.setScope( variables.wirebox.getBinder().SCOPES.SINGLETON );
 
-		var config = variables.wirebox.getInstance( configName );
-
+		var config = variables.wirebox.getInstance( "Config@cbq" );
+		config.reset();
 		config.configure();
 
 		// Get ColdBox environment settings and if same convention of 'environment'() found, execute it.

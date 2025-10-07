@@ -102,7 +102,7 @@ component accessors="true" {
 		required WorkerPool pool,
 		function afterJobHook
 	) {
-		arguments.job.setCurrentAttempt( arguments.job.getCurrentAttempt() + 1 );
+		arguments.job.setCurrentAttempt( ( arguments.job.getCurrentAttempt() ?: 0 ) + 1 );
 		return variables.async
 			.newFuture( function() {
 				if ( variables.log.canDebug() ) {
@@ -171,8 +171,11 @@ component accessors="true" {
 			} )
 			.onException( function( e ) {
 				// log failed job
-				if ( "java.util.concurrent.CompletionException" == e.getClass().getName() ) {
-					e = e.getCause();
+				if ( !isNull( e ) && "java.util.concurrent.CompletionException" == e.getClass().getName() ) {
+					var rootCause = e.getCause();
+					if ( !isNull( rootCause ) ) {
+						e = rootCause;
+					}
 				}
 
 				if ( log.canError() ) {
@@ -180,7 +183,7 @@ component accessors="true" {
 						"Exception when running job: #e.message#",
 						{
 							"job" : job.getMemento(),
-							"exception" : e
+							"exception" : isNull( e ) ? javacast( "null", "" ) : e
 						}
 					);
 				}
@@ -192,7 +195,7 @@ component accessors="true" {
 					{
 						"job" : job,
 						"pool" : pool,
-						"exception" : e
+						"exception" : isNull( e ) ? javacast( "null", "" ) : e
 					}
 				);
 
@@ -206,14 +209,20 @@ component accessors="true" {
 						invoke(
 							job,
 							"onFailure",
-							{ "exception" : e }
+							{ "exception" : isNull( e ) ? javacast( "null", "" ) : e }
 						);
 					}
 
-					variables.interceptorService.announce( "onCBQJobFailed", { "job" : job, "exception" : e } );
+					variables.interceptorService.announce(
+						"onCBQJobFailed",
+						{
+							"job" : job,
+							"exception" : isNull( e ) ? javacast( "null", "" ) : e
+						}
+					);
 
 					afterJobFailed( job.getId(), job, pool );
-					ensureFailedBatchJobIsRecorded( job, e );
+					ensureFailedBatchJobIsRecorded( job, isNull( e ) ? javacast( "null", "" ) : e );
 
 					variables.log.debug( "Marked job ###job.getId()# as failed after being cancelled." );
 				} else if ( jobMaxAttempts == 0 || job.getCurrentAttempt() < jobMaxAttempts ) {
@@ -236,14 +245,20 @@ component accessors="true" {
 						invoke(
 							job,
 							"onFailure",
-							{ "exception" : e }
+							{ "exception" : isNull( e ) ? javacast( "null", "" ) : e }
 						);
 					}
 
-					variables.interceptorService.announce( "onCBQJobFailed", { "job" : job, "exception" : e } );
+					variables.interceptorService.announce(
+						"onCBQJobFailed",
+						{
+							"job" : job,
+							"exception" : isNull( e ) ? javacast( "null", "" ) : e
+						}
+					);
 
 					afterJobFailed( job.getId(), job, pool );
-					ensureFailedBatchJobIsRecorded( job, e );
+					ensureFailedBatchJobIsRecorded( job, isNull( e ) ? javacast( "null", "" ) : e );
 
 					variables.log.debug( "Marked job ###job.getId()# as failed after maximum failed attempts." );
 				}

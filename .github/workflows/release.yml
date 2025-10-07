@@ -7,10 +7,69 @@ on:
       - master
 
 jobs:
-  
   tests:
-    uses: ./.github/workflows/tests.yml
-    secrets: inherit
+    name: Tests
+    if: "!contains(github.event.head_commit.message, '__SEMANTIC RELEASE VERSION UPDATE__')"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        cfengine: ["lucee@5", "lucee@6", "adobe@2021", "adobe@2023", "adobe@2025"]
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_RANDOM_ROOT_PASSWORD: yes
+          MYSQL_USER: cbq
+          MYSQL_PASSWORD: cbq
+          MYSQL_DATABASE: cbq
+        ports:
+          - 3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4.2.2
+
+      - name: Setup Java JDK
+        uses: actions/setup-java@v4.7.1
+        with:
+          distribution: 'temurin'
+          java-version: 21
+
+      - name: Set Up CommandBox
+        uses: Ortus-Solutions/setup-commandbox@v2.0.1
+        with:
+          install: commandbox-boxlang
+
+      - name: Install dependencies
+        run: |
+          box install
+          box config set modules.commandbox-dotenv.checkEnvPreServerStart=false
+          box package list
+
+      - name: Start server
+        env:
+          DB_HOST: localhost
+          DB_PORT: ${{ job.services.mysql.ports[3306] }}
+          DB_NAME: cbq
+          DB_USER: cbq
+          DB_PASSWORD: cbq
+          DB_DATABASE: cbq
+          DB_SCHEMA: cbq
+        run: |
+          box server start serverConfigFile="server-${{ matrix.cfengine }}.json" --noSaveSettings --debug
+          curl http://127.0.0.1:60311
+
+      - name: Run TestBox Tests
+        env:
+          DB_HOST: localhost
+          DB_PORT: ${{ job.services.mysql.ports[3306] }}
+          DB_NAME: cbq
+          DB_USER: cbq
+          DB_PASSWORD: cbq
+          DB_DATABASE: cbq
+          DB_SCHEMA: cbq
+        run: box testbox run
 
   release:
     name: Semantic Release
@@ -21,24 +80,22 @@ jobs:
       GA_COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v3.2.0
+        uses: actions/checkout@v4.2.2
         with:
           fetch-depth: 0
 
-      - name: Setup Java
-        uses: actions/setup-java@v3.9.0
+      - name: Setup Java JDK
+        uses: actions/setup-java@v4.7.1
         with:
-          distribution: "temurin"
-          java-version: "11"
+          distribution: 'temurin'
+          java-version: 11
 
-      - name: Setup CommandBox CLI
-        uses: Ortus-Solutions/setup-commandbox@main
-        with:
-          version: 5.7.0
-          install: commandbox-semantic-release
+      - name: Set Up CommandBox
+        uses: Ortus-Solutions/setup-commandbox@v2.0.1
 
-      - name: Configure Semantic Release
+      - name: Install and Configure Semantic Release
         run: |
+          box install commandbox-semantic-release@^3.0.0
           box config set endpoints.forgebox.APIToken=${{ secrets.FORGEBOX_TOKEN }}
           box config set modules.commandbox-semantic-release.targetBranch=main
           box config set modules.commandbox-semantic-release.plugins='{ "VerifyConditions": "GitHubActionsConditionsVerifier@commandbox-semantic-release", "FetchLastRelease": "ForgeBoxReleaseFetcher@commandbox-semantic-release", "RetrieveCommits": "JGitCommitsRetriever@commandbox-semantic-release", "ParseCommit": "ConventionalChangelogParser@commandbox-semantic-release", "FilterCommits": "DefaultCommitFilterer@commandbox-semantic-release", "AnalyzeCommits": "DefaultCommitAnalyzer@commandbox-semantic-release", "VerifyRelease": "NullReleaseVerifier@commandbox-semantic-release", "GenerateNotes": "GitHubMarkdownNotesGenerator@commandbox-semantic-release", "UpdateChangelog": "FileAppendChangelogUpdater@commandbox-semantic-release", "CommitArtifacts": "NullArtifactsCommitter@commandbox-semantic-release", "PublishRelease": "ForgeBoxReleasePublisher@commandbox-semantic-release", "PublicizeRelease": "GitHubReleasePublicizer@commandbox-semantic-release" }'
@@ -47,3 +104,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: box semantic-release
+
+      - name: Get Current Version
+        id: current_version
+        run: echo "::set-output name=version::`cat box.json | jq '.version' -r`"

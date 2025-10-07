@@ -15,13 +15,13 @@
     "description":"A protocol-based queueing system for ColdBox",
     "type":"modules",
     "dependencies":{
-        "qb":"^9.1.0",
-        "str":"^3.0.1"
+        "qb":"^13.0.0",
+        "str":"^4.0.0"
     },
     "devDependencies":{
-        "testbox":"stable",
-        "coldbox":"stable",
-        "cfmigrations":"^4.0.0"
+        "testbox":"^6.0.0",
+        "coldbox":"^7.0.0",
+        "cfmigrations":"^5.0.0"
     },
     "installPaths":{
         "testbox":"testbox/",

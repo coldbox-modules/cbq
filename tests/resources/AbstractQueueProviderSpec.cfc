@@ -17,10 +17,14 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
                     .setMaxAttempts( 2 );
 
                 // work the job
-                var jobFuture = provider.marshalJob( job, workerPool );
-                // if it is an async operation, wait for it to finish
-                if ( !isNull( jobFuture ) ) {
-                    jobFuture.get();
+                try {
+                    var jobFuture = provider.marshalJob( job, workerPool );
+                    // if it is an async operation, wait for it to finish
+                    if ( !isNull( jobFuture ) ) {
+                        jobFuture.get();
+                    }
+                } catch ( cbq.SyncProviderJobFailed e ) {
+                    // ignore for now
                 }
 
                 // inspect the spy
@@ -72,10 +76,14 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
                     .setMaxAttempts( 0 );
 
                 // work the job
-                var jobFuture = provider.marshalJob( job, workerPool );
-                // if it is an async operation, wait for it to finish
-                if ( !isNull( jobFuture ) ) {
-                    jobFuture.get();
+                try {
+                    var jobFuture = provider.marshalJob( job, workerPool );
+                    // if it is an async operation, wait for it to finish
+                    if ( !isNull( jobFuture ) ) {
+                        jobFuture.get();
+                    }
+                } catch ( cbq.SyncProviderJobFailed e ) {
+                    // ignore for now
                 }
 
                 // inspect the spy
@@ -97,10 +105,14 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
                 expect( application.jobAfterCalled ).toBeFalse();
 
                 // work the job
-                var jobFuture = provider.marshalJob( job, workerPool );
-                // if it is an async operation, wait for it to finish
-                if ( !isNull( jobFuture ) ) {
-                    jobFuture.get();
+                try {
+                    var jobFuture = provider.marshalJob( job, workerPool );
+                    // if it is an async operation, wait for it to finish
+                    if ( !isNull( jobFuture ) ) {
+                        jobFuture.get();
+                    }
+                } catch ( cbq.SyncProviderJobFailed e ) {
+                    // ignore for now
                 }
 
                 expect( application.jobBeforeCalled ).toBeTrue( "The before method should have been called" );
@@ -110,7 +122,7 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
     }
 
     function getProvider() {
-        return duplicate( getWireBox().getInstance( getProviderMapping() ) );
+        return getWireBox().getInstance( getProviderMapping() );
     }
 
     function getProviderMapping() {

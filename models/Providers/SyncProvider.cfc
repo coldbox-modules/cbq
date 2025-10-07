@@ -36,13 +36,13 @@ component accessors="true" extends="AbstractQueueProvider" {
 		} );
 
 		for ( var i = 1; i <= chain.len(); ) {
-			var job = chain[ i ];
+			var nextJob = chain[ i ];
 			try {
-				marshalJob( job, variables.pool );
+				marshalJob( nextJob, variables.pool );
 				i++;
 			} catch ( cbq.SyncProviderJobFailed e ) {
-				job.setCurrentAttempt( job.getCurrentAttempt() + 1 );
-				sleep( getBackoffForJob( job, variables.pool ) * 1000 );
+				nextJob.setCurrentAttempt( nextJob.getCurrentAttempt() + 1 );
+				sleep( getBackoffForJob( nextJob, variables.pool ) * 1000 );
 			}
 		}
 		return this;

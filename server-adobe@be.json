@@ -1,0 +1,22 @@
+{
+    "name":"cbq-adobe@be",
+    "app":{
+        "serverHomeDirectory":".engine/adobeBE",
+        "cfengine":"adobe@be"
+    },
+    "web":{
+        "http":{
+            "port":"60311"
+        },
+        "rewrites":{
+            "enable":"true"
+        }
+    },
+    "jvm":{
+        "heapSize":"1024"
+    },
+    "openBrowser":"false",
+    "scripts" : {
+        "onServerInstall":"cfpm install zip,debugger"
+    }
+}

@@ -6,6 +6,7 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 			.getWireBox()
 			.getBinder()
 			.unMap( "CBQJobInterceptorRestriction" );
+
 		controller
 			.getInterceptorService()
 			.registerInterceptor( interceptorObject = this, interceptorName = "InterceptorsSpec" );
