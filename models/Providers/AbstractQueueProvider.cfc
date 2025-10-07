@@ -185,6 +185,8 @@ component accessors="true" {
 					);
 				}
 
+				afterJobException( job.getId(), job, pool );
+
 				variables.interceptorService.announce(
 					"onCBQJobException",
 					{
@@ -228,9 +230,19 @@ component accessors="true" {
 	}
 
 	private void function beforeJobRun( required AbstractJob job ) {
+		return;
 	}
 
 	private void function afterJobRun( required AbstractJob job, required WorkerPool pool ) {
+		return;
+	}
+
+	private void function afterJobException(
+		required any id,
+		AbstractJob job,
+		WorkerPool pool
+	) {
+		return;
 	}
 
 	private void function afterJobFailed(
@@ -238,6 +250,7 @@ component accessors="true" {
 		AbstractJob job,
 		WorkerPool pool
 	) {
+		return;
 	}
 
 	public void function releaseJob( required AbstractJob job, required WorkerPool pool ) {
