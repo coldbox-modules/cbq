@@ -85,7 +85,7 @@ component {
 		interceptors = [ { "class" : "#moduleMapping#.interceptors.LogFailedJobsInterceptor" } ];
 	}
 
-	function onLoad() {
+	function afterConfigurationLoad() {
 		var configName = "Config@cbq";
 		variables.wirebox
 			.registerNewInstance( name = configName, instancePath = settings.configPath )
