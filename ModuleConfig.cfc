@@ -23,6 +23,8 @@ component {
 			// The default amount of time, in seconds, to wait before timing out a job.
 			// Used if the connection and job doesn't define their own.
 			"defaultWorkerTimeout" : 60,
+			// The default amount of time, in seconds, to wait for a connection to shutdown before killing it when requesting a shutdown.
+			"defaultConnectionShutdownTimeout" : 60,
 			// The default amount of time, in seconds, to wait for tasks to complete before killing them when requesting a shutdown.
 			"defaultWorkerShutdownTimeout" : 60,
 			// The default amount of attempts to try before failing a job.
@@ -123,6 +125,16 @@ component {
 					.annotatedWith( "jobPattern" ),
 				"CBQJobInterceptorRestriction"
 			);
+		}
+	}
+
+	function onUnload() {
+		for ( var pool in config.getWorkerPools() ) {
+			pool.shutdown();
+		}
+
+		for ( var conn in config.getConnections() ) {
+			conn.shutdown( force = false, timeout = settings.defaultConnectionShutdownTimeout );
 		}
 	}
 
