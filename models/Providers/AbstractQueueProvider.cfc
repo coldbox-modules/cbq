@@ -188,7 +188,12 @@ component accessors="true" {
 					);
 				}
 
-				afterJobException( job.getId(), job, pool );
+				afterJobException(
+					job.getId(),
+					job,
+					pool,
+					isNull( e ) ? javacast( "null", "" ) : e
+				);
 
 				variables.interceptorService.announce(
 					"onCBQJobException",
@@ -221,7 +226,12 @@ component accessors="true" {
 						}
 					);
 
-					afterJobFailed( job.getId(), job, pool );
+					afterJobFailed(
+						job.getId(),
+						job,
+						pool,
+						isNull( e ) ? javacast( "null", "" ) : e
+					);
 					ensureFailedBatchJobIsRecorded( job, isNull( e ) ? javacast( "null", "" ) : e );
 
 					variables.log.debug( "Marked job ###job.getId()# as failed after being cancelled." );
@@ -257,7 +267,12 @@ component accessors="true" {
 						}
 					);
 
-					afterJobFailed( job.getId(), job, pool );
+					afterJobFailed(
+						job.getId(),
+						job,
+						pool,
+						isNull( e ) ? javacast( "null", "" ) : e
+					);
 					ensureFailedBatchJobIsRecorded( job, isNull( e ) ? javacast( "null", "" ) : e );
 
 					variables.log.debug( "Marked job ###job.getId()# as failed after maximum failed attempts." );
@@ -280,7 +295,8 @@ component accessors="true" {
 	private void function afterJobException(
 		required any id,
 		AbstractJob job,
-		WorkerPool pool
+		WorkerPool pool,
+		any exception
 	) {
 		return;
 	}
@@ -288,7 +304,8 @@ component accessors="true" {
 	private void function afterJobFailed(
 		required any id,
 		AbstractJob job,
-		WorkerPool pool
+		WorkerPool pool,
+		any exception
 	) {
 		return;
 	}
