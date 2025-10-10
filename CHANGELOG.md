@@ -1,3 +1,29 @@
+# v5.0.0
+## 10 Oct 2025 — 16:37:07 UTC
+
+### BREAKING
+
++ __AbstractQueueProvider:__ Pass in the full job object to `push` ([dcd077f](https://github.com/coldbox-modules/cbq/commit/dcd077fe6d822ad7ede0fa2cd32ead4371483efc))
+
+### chore
+
++ __CI:__ Update CI matrix
+ ([ace3afa](https://github.com/coldbox-modules/cbq/commit/ace3afa8e23ff15637f1e9fbb6a487fbaba25618))
+
+### feat
+
++ __AbstractJob:__ Allow Jobs to be cancelled, preventing further retries
+ ([5ece4df](https://github.com/coldbox-modules/cbq/commit/5ece4df2616f10a43b5ca5002887e6b081506504))
++ __AbstractQueueProvider:__ Add a `afterJobExpection` provider-level method
+ ([1262a67](https://github.com/coldbox-modules/cbq/commit/1262a670b6e56828a9f0ae608ccf64e8d532c7c4))
++ __AbstractJob:__ Add a `providerContext` field on the job ([dae0d8e](https://github.com/coldbox-modules/cbq/commit/dae0d8efac1ab545402a54d9ecf4b473041e3035))
++ __lifecycle:__ Call `shutdown` on connections and workers on `onUnload` ([fb7d808](https://github.com/coldbox-modules/cbq/commit/fb7d808bfed9102ae7370f1d6a9b47c78950f042))
+
+### fix
+
++ __ModuleConfig:__ Use `afterConfigurationLoad` to let all other modules load ([1791bb9](https://github.com/coldbox-modules/cbq/commit/1791bb99c256bcfcec36b5bdfc93aaf85300f4f2))
+
+
 # v4.0.0
 ## 31 Jan 2025 — 17:41:44 UTC
 
