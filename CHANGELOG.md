@@ -1,3 +1,12 @@
+# v5.0.1
+## 10 Oct 2025 — 17:13:35 UTC
+
+### fix
+
++ __QueueProvider:__ Add exception to the `afterJobException` and `afterJobFailed` lifecycle methods
+ ([d263896](https://github.com/coldbox-modules/cbq/commit/d263896718cdcfe9a4b54c3bb13d1c62ac1102e2))
+
+
 # v5.0.0
 ## 10 Oct 2025 — 16:37:07 UTC
 
