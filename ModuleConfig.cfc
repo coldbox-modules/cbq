@@ -128,6 +128,7 @@ component {
 	}
 
 	function onUnload() {
+		var config = variables.wirebox.getInstance( "Config@cbq" );
 		for ( var pool in config.getWorkerPools() ) {
 			pool.shutdown();
 		}
