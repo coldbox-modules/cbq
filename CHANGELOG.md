@@ -1,3 +1,12 @@
+# v5.0.2
+## 13 Oct 2025 — 19:31:41 UTC
+
+### fix
+
++ __ModuleConfig:__ Add missing `config` variable in ModuleConfig
+ ([1cff751](https://github.com/coldbox-modules/cbq/commit/1cff751c7f88988304ead62b2e8a25fd2c02a18c))
+
+
 # v5.0.1
 ## 10 Oct 2025 — 17:13:35 UTC
 
