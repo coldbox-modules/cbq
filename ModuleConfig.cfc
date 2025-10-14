@@ -129,12 +129,14 @@ component {
 
 	function onUnload() {
 		var config = variables.wirebox.getInstance( "Config@cbq" );
-		for ( var pool in config.getWorkerPools() ) {
-			pool.shutdown();
+		var workerPools = config.getWorkerPools()
+		for ( var pool in workerPools ) {
+			workerPools[ pool ].shutdown();
 		}
 
-		for ( var conn in config.getConnections() ) {
-			conn.shutdown( force = false, timeout = settings.defaultConnectionShutdownTimeout );
+		var connections = config.getConnections();
+		for ( var conn in connections ) {
+			connections[ conn ].shutdown( force = false, timeout = settings.defaultConnectionShutdownTimeout );
 		}
 	}
 
