@@ -1,3 +1,12 @@
+# v5.0.5
+## 14 Oct 2025 — 20:36:54 UTC
+
+### fix
+
++ __ModuleConfig:__ Make shutdown methods public
+ ([df0350a](https://github.com/coldbox-modules/cbq/commit/df0350a2a45e3662ad06bea0462425e09f715a53))
+
+
 # v5.0.4
 ## 14 Oct 2025 — 19:29:50 UTC
 
