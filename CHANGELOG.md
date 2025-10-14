@@ -1,3 +1,12 @@
+# v5.0.4
+## 14 Oct 2025 — 19:29:50 UTC
+
+### fix
+
++ __QueueConnection:__ Add `shutdown` pass through method to the QueueProvider
+ ([1192c51](https://github.com/coldbox-modules/cbq/commit/1192c510e2c99951fc15ae0679679528460f6135))
+
+
 # v5.0.3
 ## 14 Oct 2025 — 16:37:59 UTC
 
