@@ -22,4 +22,9 @@ component accessors="true" {
 		};
 	}
 
+	private void function shutdown( boolean force = false, numeric timeout = 60 ) {
+		getProvider().shutdown( arguments.force, arguments.timeout );
+		return;
+	}
+
 }

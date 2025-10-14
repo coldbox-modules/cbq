@@ -458,7 +458,7 @@ component accessors="true" {
 		arguments.job.getBatch().recordFailedJob( arguments.job.getId(), arguments.error );
 	}
 
-	private AbstractQueueProvider function shutdown( boolean force = false, numeric timeout = 60 ) {
+	private void function shutdown( boolean force = false, numeric timeout = 60 ) {
 		return this;
 	}
 
