@@ -1,3 +1,12 @@
+# v5.0.3
+## 14 Oct 2025 — 16:37:59 UTC
+
+### fix
+
++ __ModuleConfig:__ Fix shutdown on unload logic
+ ([aca7ece](https://github.com/coldbox-modules/cbq/commit/aca7ece6ba7bae6a06e41220fda219183beea3c9))
+
+
 # v5.0.2
 ## 13 Oct 2025 — 19:31:41 UTC
 
