@@ -1,3 +1,12 @@
+# v5.0.7
+## 16 Oct 2025 — 20:32:53 UTC
+
+### fix
+
++ __AbstractQueueProvider:__ Update `release` to follow the new `push` method signature
+ ([fc28483](https://github.com/coldbox-modules/cbq/commit/fc2848345445adf7c36e34eeb403d92fc46d8831))
+
+
 # v5.0.6
 ## 16 Oct 2025 — 14:33:23 UTC
 
