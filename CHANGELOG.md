@@ -1,3 +1,11 @@
+# v5.0.6
+## 16 Oct 2025 — 14:33:23 UTC
+
+### fix
+
++ __AbstractQueueProvider:__ Correct void return on shutdown method ([4363f11](https://github.com/coldbox-modules/cbq/commit/4363f111c0e7d88721d3630bc0e6ac4c2d3e5692))
+
+
 # v5.0.5
 ## 14 Oct 2025 — 20:36:54 UTC
 
