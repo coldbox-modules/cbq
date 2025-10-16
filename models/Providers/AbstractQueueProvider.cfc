@@ -314,7 +314,7 @@ component accessors="true" {
 		arguments.job.setCurrentAttempt( arguments.job.getCurrentAttempt() + 1 );
 		push(
 			getQueueForJob( arguments.job, arguments.pool ),
-			serializeJSON( job.getMemento() ),
+			job,
 			getBackoffForJob( arguments.job, arguments.pool ),
 			arguments.job.getCurrentAttempt()
 		);
