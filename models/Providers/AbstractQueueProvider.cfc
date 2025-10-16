@@ -459,7 +459,7 @@ component accessors="true" {
 	}
 
 	public void function shutdown( boolean force = false, numeric timeout = 60 ) {
-		return this;
+		return;
 	}
 
 }
