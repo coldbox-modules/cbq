@@ -27,10 +27,11 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 						job = "BeforeAndAfterJob",
 						connection = "syncBatch"
 					);
+				pendingBatch.setName( "sync-failing-finally" );
 
 				try {
 					pendingBatch.dispatch();
-				} catch ( any e ) {
+				} catch ( cbq.MaxAttemptsReached e ) {
 					// The sync provider rethrows the terminal failure.
 				}
 
@@ -53,6 +54,25 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 						job = "BeforeAndAfterJob",
 						connection = "syncBatch"
 					);
+
+				pendingBatch.dispatch();
+
+				expect( application.jobAfterCalled )
+					.toBeTrue( "The `finally` job should dispatch when all batch jobs succeed." );
+			} );
+
+			it( "dispatches the finally job when all jobs succeed", function() {
+				var cbq = getWireBox().getInstance( "@cbq" );
+				registerSyncConnectionAndWorkerPool();
+
+				var pendingBatch = cbq
+					.batch( [ cbq.job( "SendWelcomeEmailJob" ), cbq.job( "SendWelcomeEmailJob" ) ] )
+					.onConnection( "syncBatch" )
+					.onComplete(
+						job = "BeforeAndAfterJob",
+						connection = "syncBatch"
+					);
+				pendingBatch.setName( "sync-success-finally" );
 
 				pendingBatch.dispatch();
 

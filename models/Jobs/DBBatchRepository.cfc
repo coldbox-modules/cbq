@@ -11,7 +11,11 @@ component singleton accessors="true" {
 	property name="batchTableName" default="cbq_batches";
 
 	public DBBatchRepository function init() {
-		variables.timeBasedUUIDGenerator = createObject( "java", "com.fasterxml.uuid.Generators" ).timeBasedGenerator();
+		try {
+			variables.timeBasedUUIDGenerator = createObject( "java", "com.fasterxml.uuid.Generators" ).timeBasedGenerator();
+		} catch ( any e ) {
+			variables.timeBasedUUIDGenerator = javacast( "null", "" );
+		}
 		variables.defaultQueryOptions = {};
 		return this;
 	}
@@ -51,7 +55,9 @@ component singleton accessors="true" {
 	}
 
 	public Batch function store( required PendingBatch batch ) {
-		var id = variables.timeBasedUUIDGenerator.generate().toString();
+		var id = isNull( variables.timeBasedUUIDGenerator ) ? createUUID() : variables.timeBasedUUIDGenerator
+			.generate()
+			.toString();
 		var batchName = arguments.batch.getName();
 		if ( isNull( batchName ) || !isSimpleValue( batchName ) ) {
 			batchName = "";
@@ -109,13 +115,22 @@ component singleton accessors="true" {
 
 			var updatedValues = {
 				"pendingJobs" : data.pendingJobs - 1,
-				"successfulJobs" : data.successfulJobs + 1,
-				"failedJobs" : data.failedJobs
+				"failedJobs" : data.failedJobs,
+				"failedJobIds" : serializeJSON(
+					deserializeJSON( data.failedJobIds ).filter( ( failedJobId ) => failedJobId != jobId )
+				)
 			};
+
+			if ( data.keyExists( "successfulJobs" ) ) {
+				updatedValues[ "successfulJobs" ] = data.successfulJobs + 1;
+			}
 
 			qb.table( variables.batchTableName )
 				.where( "id", arguments.batchId )
-				.update( values = updatedValues, options = variables.defaultQueryOptions );
+				.update(
+					values = updatedValues,
+					options = variables.defaultQueryOptions
+				);
 
 			return {
 				"pendingJobs" : data.pendingJobs - 1,
@@ -145,7 +160,10 @@ component singleton accessors="true" {
 
 			qb.table( variables.batchTableName )
 				.where( "id", arguments.batchId )
-				.update( values = updatedValues, options = variables.defaultQueryOptions );
+				.update(
+					values = updatedValues,
+					options = variables.defaultQueryOptions
+				);
 
 			return {
 				"pendingJobs" : data.pendingJobs - 1,
@@ -192,7 +210,7 @@ component singleton accessors="true" {
 		batch.setTotalJobs( data.totalJobs );
 		batch.setPendingJobs( data.pendingJobs );
 		batch.setFailedJobs( data.failedJobs );
-		batch.setSuccessfulJobs( data.successfulJobs );
+		batch.setSuccessfulJobs( data.keyExists( "successfulJobs" ) ? data.successfulJobs : 0 );
 		batch.setFailedJobIds( deserializeJSON( data.failedJobIds ) );
 		batch.setOptions( deserializeJSON( data.options ) );
 		batch.setCreatedDate( data.createdDate );
