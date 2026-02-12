@@ -3,11 +3,11 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 	function run() {
 		describe( "batch finally dispatching", function() {
 			beforeEach( function() {
-				structDelete( request, "jobBeforeCalled" );
-				structDelete( request, "jobAfterCalled" );
+				structDelete( application, "jobBeforeCalled" );
+				structDelete( application, "jobAfterCalled" );
 
-				param request.jobBeforeCalled = false;
-				param request.jobAfterCalled = false;
+				param application.jobBeforeCalled = false;
+				param application.jobAfterCalled = false;
 			} );
 
 			it( "dispatches the finally job when the last job fails", function() {
@@ -20,7 +20,11 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 				var pendingBatch = cbq
 					.batch( [ successJob, failingJob ] )
 					.onConnection( "syncBatch" )
-					.onComplete( job = "RequestScopeBeforeAndAfterJob", connection = "syncBatch" );
+					.onComplete(
+						job = "BeforeAndAfterJob",
+						connection = "syncBatch"
+					);
+				pendingBatch.setName( "sync-failing-finally" );
 
 				try {
 					pendingBatch.dispatch();
@@ -28,7 +32,9 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 					// The sync provider rethrows the terminal failure.
 				}
 
-				expect( request.jobAfterCalled ).toBeTrue( "The `finally` job should dispatch even when the last job fails." );
+				expect( application.jobAfterCalled ).toBeTrue(
+					"The `finally` job should dispatch even when the last job fails."
+				);
 			} );
 
 			it( "dispatches the finally job when all jobs succeed", function() {
@@ -36,16 +42,18 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 				registerSyncConnectionAndWorkerPool();
 
 				var pendingBatch = cbq
-					.batch( [
-						cbq.job( "SendWelcomeEmailJob" ),
-						cbq.job( "SendWelcomeEmailJob" )
-					] )
+					.batch( [ cbq.job( "SendWelcomeEmailJob" ), cbq.job( "SendWelcomeEmailJob" ) ] )
 					.onConnection( "syncBatch" )
-					.onComplete( job = "RequestScopeBeforeAndAfterJob", connection = "syncBatch" );
+					.onComplete(
+						job = "BeforeAndAfterJob",
+						connection = "syncBatch"
+					);
+				pendingBatch.setName( "sync-success-finally" );
 
 				pendingBatch.dispatch();
 
-				expect( request.jobAfterCalled ).toBeTrue( "The `finally` job should dispatch when all batch jobs succeed." );
+				expect( application.jobAfterCalled )
+					.toBeTrue( "The `finally` job should dispatch when all batch jobs succeed." );
 			} );
 		} );
 	}
