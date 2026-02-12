@@ -15,18 +15,12 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 				registerSyncConnectionAndWorkerPool();
 
 				var successJob = cbq.job( "SendWelcomeEmailJob" );
-				var failingJob = cbq.job(
-					job = "ReleaseTestJob",
-					maxAttempts = 1
-				);
+				var failingJob = cbq.job( job = "ReleaseTestJob", maxAttempts = 1 );
 
 				var pendingBatch = cbq
 					.batch( [ successJob, failingJob ] )
 					.onConnection( "syncBatch" )
-					.onComplete(
-						job = "RequestScopeBeforeAndAfterJob",
-						connection = "syncBatch"
-					);
+					.onComplete( job = "RequestScopeBeforeAndAfterJob", connection = "syncBatch" );
 
 				try {
 					pendingBatch.dispatch();
@@ -34,8 +28,7 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 					// The sync provider rethrows the terminal failure.
 				}
 
-				expect( request.jobAfterCalled )
-					.toBeTrue( "The `finally` job should dispatch even when the last job fails." );
+				expect( request.jobAfterCalled ).toBeTrue( "The `finally` job should dispatch even when the last job fails." );
 			} );
 
 			it( "dispatches the finally job when all jobs succeed", function() {
@@ -43,17 +36,16 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 				registerSyncConnectionAndWorkerPool();
 
 				var pendingBatch = cbq
-					.batch( [ cbq.job( "SendWelcomeEmailJob" ), cbq.job( "SendWelcomeEmailJob" ) ] )
+					.batch( [
+						cbq.job( "SendWelcomeEmailJob" ),
+						cbq.job( "SendWelcomeEmailJob" )
+					] )
 					.onConnection( "syncBatch" )
-					.onComplete(
-						job = "RequestScopeBeforeAndAfterJob",
-						connection = "syncBatch"
-					);
+					.onComplete( job = "RequestScopeBeforeAndAfterJob", connection = "syncBatch" );
 
 				pendingBatch.dispatch();
 
-				expect( request.jobAfterCalled )
-					.toBeTrue( "The `finally` job should dispatch when all batch jobs succeed." );
+				expect( request.jobAfterCalled ).toBeTrue( "The `finally` job should dispatch when all batch jobs succeed." );
 			} );
 		} );
 	}
