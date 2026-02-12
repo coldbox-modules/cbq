@@ -11,11 +11,7 @@ component singleton accessors="true" {
 	property name="batchTableName" default="cbq_batches";
 
 	public DBBatchRepository function init() {
-		try {
-			variables.timeBasedUUIDGenerator = createObject( "java", "com.fasterxml.uuid.Generators" ).timeBasedGenerator();
-		} catch ( any e ) {
-			variables.timeBasedUUIDGenerator = javacast( "null", "" );
-		}
+		variables.timeBasedUUIDGenerator = createObject( "java", "com.fasterxml.uuid.Generators" ).timeBasedGenerator();
 		variables.defaultQueryOptions = {};
 		return this;
 	}
@@ -55,19 +51,17 @@ component singleton accessors="true" {
 	}
 
 	public Batch function store( required PendingBatch batch ) {
-		var id = isNull( variables.timeBasedUUIDGenerator ) ? createUUID() : variables.timeBasedUUIDGenerator
-			.generate()
-			.toString();
-		local.batchName = arguments.batch.getName();
-		if ( isNull( local.batchName ) || !isSimpleValue( local.batchName ) ) {
-			local.batchName = "";
+		var id = variables.timeBasedUUIDGenerator.generate().toString();
+		var batchName = arguments.batch.getName();
+		if ( isNull( batchName ) || !isSimpleValue( batchName ) ) {
+			batchName = "";
 		}
 
 		qb.table( variables.batchTableName )
 			.insert(
 				values = {
 					"id" : id,
-					"name" : local.batchName,
+					"name" : batchName,
 					"totalJobs" : 0,
 					"pendingJobs" : 0,
 					"successfulJobs" : 0,
