@@ -23,7 +23,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 				sleep( delay * 1000 );
 				return true;
 			}, workerPool.getExecutor() )
-			.then( function() {
+			.thenCompose( function() {
 				job.setId( createUUID() );
 				if ( !isNull( arguments.currentAttempt ) ) {
 					job.setCurrentAttempt( attempts );
