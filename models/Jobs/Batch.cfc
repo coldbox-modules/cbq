@@ -10,6 +10,7 @@ component accessors="true" {
 	property name="totalJobs" type="numeric";
 	property name="pendingJobs" type="numeric";
 	property name="failedJobs" type="numeric";
+	property name="successfulJobs" type="numeric";
 	property name="failedJobIds" type="array";
 	property name="options" type="struct";
 	property name="createdDate" type="numeric";

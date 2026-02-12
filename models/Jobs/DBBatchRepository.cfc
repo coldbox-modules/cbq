@@ -52,14 +52,19 @@ component singleton accessors="true" {
 
 	public Batch function store( required PendingBatch batch ) {
 		var id = variables.timeBasedUUIDGenerator.generate().toString();
+		var batchName = arguments.batch.getName();
+		if ( isNull( batchName ) || !isSimpleValue( batchName ) ) {
+			batchName = "";
+		}
 
 		qb.table( variables.batchTableName )
 			.insert(
 				values = {
 					"id" : id,
-					"name" : arguments.batch.getName(),
+					"name" : batchName,
 					"totalJobs" : 0,
 					"pendingJobs" : 0,
+					"successfulJobs" : 0,
 					"failedJobs" : 0,
 					"failedJobIds" : "[]",
 					"options" : serializeJSON( arguments.batch.getOptions() ),
@@ -102,23 +107,20 @@ component singleton accessors="true" {
 				throw( type = "cbq.BatchNotFound", message = "No batch found for id [#arguments.batchId#]" );
 			}
 
+			var updatedValues = {
+				"pendingJobs" : data.pendingJobs - 1,
+				"successfulJobs" : data.successfulJobs + 1,
+				"failedJobs" : data.failedJobs
+			};
+
 			qb.table( variables.batchTableName )
 				.where( "id", arguments.batchId )
-				.update(
-					values = {
-						"pendingJobs" : data.pendingJobs - 1,
-						"failedJobs" : data.failedJobs,
-						"failedJobIds" : serializeJSON(
-							deserializeJSON( data.failedJobIds ).filter( ( failedJobId ) => failedJobId != jobId )
-						)
-					},
-					options = variables.defaultQueryOptions
-				);
+				.update( values = updatedValues, options = variables.defaultQueryOptions );
 
 			return {
 				"pendingJobs" : data.pendingJobs - 1,
 				"failedJobs" : data.failedJobs,
-				"allJobsHaveRanExactlyOnce" : ( data.pendingJobs - 1 ) - data.failedJobs == 0
+				"allJobsHaveRanExactlyOnce" : ( data.pendingJobs - 1 ) == 0
 			};
 		}
 	}
@@ -135,21 +137,20 @@ component singleton accessors="true" {
 				throw( type = "cbq.BatchNotFound", message = "No batch found for id [#arguments.batchId#]" );
 			}
 
+			var updatedValues = {
+				"pendingJobs" : data.pendingJobs - 1,
+				"failedJobs" : data.failedJobs + 1,
+				"failedJobIds" : serializeJSON( deserializeJSON( data.failedJobIds ).append( arguments.jobId ) )
+			};
+
 			qb.table( variables.batchTableName )
 				.where( "id", arguments.batchId )
-				.update(
-					values = {
-						"pendingJobs" : data.pendingJobs,
-						"failedJobs" : data.failedJobs + 1,
-						"failedJobIds" : serializeJSON( deserializeJSON( data.failedJobIds ).append( arguments.jobId ) )
-					},
-					options = variables.defaultQueryOptions
-				);
+				.update( values = updatedValues, options = variables.defaultQueryOptions );
 
 			return {
-				"pendingJobs" : data.pendingJobs,
+				"pendingJobs" : data.pendingJobs - 1,
 				"failedJobs" : data.failedJobs + 1,
-				"allJobsHaveRanExactlyOnce" : data.pendingJobs - ( data.failedJobs + 1 ) == 0
+				"allJobsHaveRanExactlyOnce" : ( data.pendingJobs - 1 ) == 0
 			};
 		}
 	}
@@ -191,6 +192,7 @@ component singleton accessors="true" {
 		batch.setTotalJobs( data.totalJobs );
 		batch.setPendingJobs( data.pendingJobs );
 		batch.setFailedJobs( data.failedJobs );
+		batch.setSuccessfulJobs( data.successfulJobs );
 		batch.setFailedJobIds( deserializeJSON( data.failedJobIds ) );
 		batch.setOptions( deserializeJSON( data.options ) );
 		batch.setCreatedDate( data.createdDate );

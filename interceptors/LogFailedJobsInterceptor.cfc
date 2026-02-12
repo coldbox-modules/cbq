@@ -44,7 +44,12 @@ component {
 				"null" : ( arguments.data.exception.type ?: "" ) == "",
 				"nulls" : ( arguments.data.exception.type ?: "" ) == ""
 			},
-			"exceptionMessage" : arguments.data.exception.message,
+			"exceptionMessage" : {
+				"value": arguments.data.exception.message ?: "",
+				"cfsqltype" : "CF_SQL_VARCHAR",
+				"null" : ( arguments.data.exception.message ?: "" ) == "",
+				"nulls" : ( arguments.data.exception.message ?: "" ) == ""
+			},
 			"exceptionDetail" : {
 				"value" : arguments.data.exception.detail ?: "",
 				"cfsqltype" : "CF_SQL_VARCHAR",
@@ -57,8 +62,13 @@ component {
 				"null" : ( arguments.data.exception.extendedInfo ?: "" ) == "",
 				"nulls" : ( arguments.data.exception.extendedInfo ?: "" ) == ""
 			},
-			"exceptionStackTrace" : arguments.data.exception.stackTrace,
-			"exception" : serializeJSON( arguments.data.exception ),
+			"exceptionStackTrace" : {
+				"value": arguments.data.exception.stackTrace ?: "",
+				"cfsqltype" : "CF_SQL_VARCHAR",
+				"null" : ( arguments.data.exception.stackTrace ?: "" ) == "",
+				"nulls" : ( arguments.data.exception.stackTrace ?: "" ) == ""
+			},
+			"exception" : isNull( arguments.data.exception ) ? javacast( "null", "" ) : serializeJSON( arguments.data.exception ),
 			"failedDate" : { "value": getCurrentUnixTimestamp(), "cfsqltype": "CF_SQL_BIGINT" },
 			"originalId" : { "value": arguments.data.job.getId(), "cfsqltype": "CF_SQL_VARCHAR" }
 		};
