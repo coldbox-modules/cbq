@@ -118,10 +118,7 @@ component singleton accessors="true" {
 
 			qb.table( variables.batchTableName )
 				.where( "id", arguments.batchId )
-				.update(
-					values = updatedValues,
-					options = variables.defaultQueryOptions
-				);
+				.update( values = updatedValues, options = variables.defaultQueryOptions );
 
 			return {
 				"pendingJobs" : data.pendingJobs - 1,
@@ -151,10 +148,7 @@ component singleton accessors="true" {
 
 			qb.table( variables.batchTableName )
 				.where( "id", arguments.batchId )
-				.update(
-					values = updatedValues,
-					options = variables.defaultQueryOptions
-				);
+				.update( values = updatedValues, options = variables.defaultQueryOptions );
 
 			return {
 				"pendingJobs" : data.pendingJobs - 1,
