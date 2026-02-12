@@ -27,7 +27,6 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 						job = "BeforeAndAfterJob",
 						connection = "syncBatch"
 					);
-				pendingBatch.setName( "sync-failing-finally" );
 
 				try {
 					pendingBatch.dispatch();
@@ -72,7 +71,6 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 						job = "BeforeAndAfterJob",
 						connection = "syncBatch"
 					);
-				pendingBatch.setName( "sync-success-finally" );
 
 				pendingBatch.dispatch();
 
