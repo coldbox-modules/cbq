@@ -3,11 +3,11 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 	function run() {
 		describe( "batch finally dispatching", function() {
 			beforeEach( function() {
-				structDelete( application, "jobBeforeCalled" );
-				structDelete( application, "jobAfterCalled" );
+				structDelete( request, "jobBeforeCalled" );
+				structDelete( request, "jobAfterCalled" );
 
-				param application.jobBeforeCalled = false;
-				param application.jobAfterCalled = false;
+				param request.jobBeforeCalled = false;
+				param request.jobAfterCalled = false;
 			} );
 
 			it( "dispatches the finally job when the last job fails", function() {
@@ -24,7 +24,7 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 					.batch( [ successJob, failingJob ] )
 					.onConnection( "syncBatch" )
 					.onComplete(
-						job = "BeforeAndAfterJob",
+						job = "RequestScopeBeforeAndAfterJob",
 						connection = "syncBatch"
 					);
 
@@ -34,7 +34,7 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 					// The sync provider rethrows the terminal failure.
 				}
 
-				expect( application.jobAfterCalled )
+				expect( request.jobAfterCalled )
 					.toBeTrue( "The `finally` job should dispatch even when the last job fails." );
 			} );
 
@@ -46,13 +46,13 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 					.batch( [ cbq.job( "SendWelcomeEmailJob" ), cbq.job( "SendWelcomeEmailJob" ) ] )
 					.onConnection( "syncBatch" )
 					.onComplete(
-						job = "BeforeAndAfterJob",
+						job = "RequestScopeBeforeAndAfterJob",
 						connection = "syncBatch"
 					);
 
 				pendingBatch.dispatch();
 
-				expect( application.jobAfterCalled )
+				expect( request.jobAfterCalled )
 					.toBeTrue( "The `finally` job should dispatch when all batch jobs succeed." );
 			} );
 		} );

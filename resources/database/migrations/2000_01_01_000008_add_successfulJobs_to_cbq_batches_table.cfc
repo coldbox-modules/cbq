@@ -2,7 +2,7 @@ component {
 
 	function up( schema ) {
 		schema.alter( "cbq_batches", ( t ) => {
-			t.unsignedInteger( "successfulJobs" ).default( 0 );
+			t.addColumn( t.unsignedInteger( "successfulJobs" ).default( 0 ) );
 		} );
 	}
 
