@@ -58,12 +58,16 @@ component singleton accessors="true" {
 		var id = isNull( variables.timeBasedUUIDGenerator ) ? createUUID() : variables.timeBasedUUIDGenerator
 			.generate()
 			.toString();
+		local.batchName = arguments.batch.getName();
+		if ( isNull( local.batchName ) || !isSimpleValue( local.batchName ) ) {
+			local.batchName = "";
+		}
 
 		qb.table( variables.batchTableName )
 			.insert(
 				values = {
 					"id" : id,
-					"name" : arguments.batch.getName(),
+					"name" : local.batchName,
 					"totalJobs" : 0,
 					"pendingJobs" : 0,
 					"failedJobs" : 0,
