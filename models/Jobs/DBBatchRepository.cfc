@@ -109,15 +109,12 @@ component singleton accessors="true" {
 
 			var updatedValues = {
 				"pendingJobs" : data.pendingJobs - 1,
+				"successfulJobs" : data.successfulJobs + 1,
 				"failedJobs" : data.failedJobs,
 				"failedJobIds" : serializeJSON(
 					deserializeJSON( data.failedJobIds ).filter( ( failedJobId ) => failedJobId != jobId )
 				)
 			};
-
-			if ( data.keyExists( "successfulJobs" ) ) {
-				updatedValues[ "successfulJobs" ] = data.successfulJobs + 1;
-			}
 
 			qb.table( variables.batchTableName )
 				.where( "id", arguments.batchId )
@@ -204,7 +201,7 @@ component singleton accessors="true" {
 		batch.setTotalJobs( data.totalJobs );
 		batch.setPendingJobs( data.pendingJobs );
 		batch.setFailedJobs( data.failedJobs );
-		batch.setSuccessfulJobs( data.keyExists( "successfulJobs" ) ? data.successfulJobs : 0 );
+		batch.setSuccessfulJobs( data.successfulJobs );
 		batch.setFailedJobIds( deserializeJSON( data.failedJobIds ) );
 		batch.setOptions( deserializeJSON( data.options ) );
 		batch.setCreatedDate( data.createdDate );
