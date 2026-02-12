@@ -110,10 +110,7 @@ component singleton accessors="true" {
 			var updatedValues = {
 				"pendingJobs" : data.pendingJobs - 1,
 				"successfulJobs" : data.successfulJobs + 1,
-				"failedJobs" : data.failedJobs,
-				"failedJobIds" : serializeJSON(
-					deserializeJSON( data.failedJobIds ).filter( ( failedJobId ) => failedJobId != jobId )
-				)
+				"failedJobs" : data.failedJobs
 			};
 
 			qb.table( variables.batchTableName )
