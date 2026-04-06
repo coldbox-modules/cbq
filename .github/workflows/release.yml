@@ -17,7 +17,7 @@ jobs:
         cfengine: ["lucee@5", "lucee@6", "adobe@2021", "adobe@2023", "adobe@2025"]
     services:
       mysql:
-        image: mysql:5.7
+        image: mysql:8.0
         env:
           MYSQL_RANDOM_ROOT_PASSWORD: yes
           MYSQL_USER: cbq
@@ -25,7 +25,7 @@ jobs:
           MYSQL_DATABASE: cbq
         ports:
           - 3306
-        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+        options: --default-authentication-plugin=mysql_native_password --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4.2.2
