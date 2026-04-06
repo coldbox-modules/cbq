@@ -28,6 +28,8 @@ jobs:
           MYSQL_USER: cbq
           MYSQL_PASSWORD: cbq
           MYSQL_DATABASE: cbq
+        volumes:
+          - ./.github/mysql/init/01-auth-plugin.sql:/docker-entrypoint-initdb.d/01-auth-plugin.sql:ro
         ports:
           - 3306
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
