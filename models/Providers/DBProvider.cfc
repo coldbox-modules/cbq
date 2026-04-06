@@ -421,7 +421,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 		var ids = newQuery()
 			.from( variables.tableName )
 			.limit( arguments.capacity )
-			.lockForUpdate()
+			.lockForUpdate( skipLocked = true )
 			.when( !shouldWorkAllQueues( arguments.pool ), ( q ) => q.whereIn( "queue", pool.getQueue() ) )
 			.where( ( q ) => {
 				q.whereNull( "completedDate" );
