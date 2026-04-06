@@ -45,7 +45,7 @@ component {
 				"nulls" : ( arguments.data.exception.type ?: "" ) == ""
 			},
 			"exceptionMessage" : {
-				"value": arguments.data.exception.message ?: "",
+				"value" : arguments.data.exception.message ?: "",
 				"cfsqltype" : "CF_SQL_VARCHAR",
 				"null" : ( arguments.data.exception.message ?: "" ) == "",
 				"nulls" : ( arguments.data.exception.message ?: "" ) == ""
@@ -63,27 +63,37 @@ component {
 				"nulls" : ( arguments.data.exception.extendedInfo ?: "" ) == ""
 			},
 			"exceptionStackTrace" : {
-				"value": arguments.data.exception.stackTrace ?: "",
+				"value" : isNull( arguments.data.exception.stackTrace ) ? "" : (
+					isSimpleValue( arguments.data.exception.stackTrace ) ? arguments.data.exception.stackTrace : serializeJSON(
+						arguments.data.exception.stackTrace
+					)
+				),
 				"cfsqltype" : "CF_SQL_VARCHAR",
-				"null" : ( arguments.data.exception.stackTrace ?: "" ) == "",
-				"nulls" : ( arguments.data.exception.stackTrace ?: "" ) == ""
+				"null" : isNull( arguments.data.exception.stackTrace ) || (
+					isSimpleValue( arguments.data.exception.stackTrace ) && arguments.data.exception.stackTrace == ""
+				),
+				"nulls" : isNull( arguments.data.exception.stackTrace ) || (
+					isSimpleValue( arguments.data.exception.stackTrace ) && arguments.data.exception.stackTrace == ""
+				)
 			},
-			"exception" : isNull( arguments.data.exception ) ? javacast( "null", "" ) : serializeJSON( arguments.data.exception ),
-			"failedDate" : { "value": getCurrentUnixTimestamp(), "cfsqltype": "CF_SQL_BIGINT" },
-			"originalId" : { "value": arguments.data.job.getId(), "cfsqltype": "CF_SQL_VARCHAR" }
+			"exception" : isNull( arguments.data.exception ) ? javacast( "null", "" ) : serializeJSON(
+				arguments.data.exception
+			),
+			"failedDate" : {
+				"value" : getCurrentUnixTimestamp(),
+				"cfsqltype" : "CF_SQL_BIGINT"
+			},
+			"originalId" : {
+				"value" : arguments.data.job.getId(),
+				"cfsqltype" : "CF_SQL_VARCHAR"
+			}
 		};
 
 		try {
 			qb.table( variables.settings.logFailedJobsProperties.tableName )
-				.insert(
-					values = logData,
-					options = options
-				);
+				.insert( values = logData, options = options );
 		} catch ( any e ) {
-			log.error( "Failed to log failed job: #e.message#", {
-				"log": logData,
-				"exception": e
-			} );
+			log.error( "Failed to log failed job: #e.message#", { "log" : logData, "exception" : e } );
 			rethrow;
 		}
 	}
