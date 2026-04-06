@@ -19,12 +19,10 @@ jobs:
       mysql:
         image: mysql:8.0
         env:
-          MYSQL_RANDOM_ROOT_PASSWORD: yes
+          MYSQL_ROOT_PASSWORD: root
           MYSQL_USER: cbq
           MYSQL_PASSWORD: cbq
           MYSQL_DATABASE: cbq
-        volumes:
-          - ./.github/mysql/init/01-auth-plugin.sql:/docker-entrypoint-initdb.d/01-auth-plugin.sql:ro
         ports:
           - 3306
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
@@ -48,6 +46,10 @@ jobs:
           box install
           box config set modules.commandbox-dotenv.checkEnvPreServerStart=false
           box package list
+
+      - name: Configure MySQL user auth plugin
+        run: |
+          mysql -h 127.0.0.1 -P ${{ job.services.mysql.ports[3306] }} -uroot -proot -e "ALTER USER 'cbq'@'%' IDENTIFIED WITH mysql_native_password BY 'cbq'; FLUSH PRIVILEGES;"
 
       - name: Start server
         env:
