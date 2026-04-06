@@ -25,7 +25,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 			}, workerPool.getExecutor() )
 			.thenCompose( function() {
 				job.setId( createUUID() );
-				if ( !isNull( arguments.currentAttempt ) ) {
+				if ( attempts > 0 ) {
 					job.setCurrentAttempt( attempts );
 				}
 				return marshalJob( job, workerPool );

@@ -395,11 +395,14 @@ component accessors="true" extends="AbstractQueueProvider" {
 						);
 				} );
 				// past the job's own timeout (availableDate was set to now + jobTimeout at reservation time)
-				q1.orWhere(
-					"availableDate",
-					"<=",
-					variables.getCurrentUnixTimestamp()
-				);
+				q1.orWhere( ( q2 ) => {
+					q2.whereNotNull( "reservedDate" )
+						.where(
+							"availableDate",
+							"<=",
+							variables.getCurrentUnixTimestamp()
+						);
+				} );
 				// reserved by a worker but never released
 				q1.orWhere( ( q3 ) => {
 					q3.whereNull( "reservedDate" )
@@ -448,11 +451,14 @@ component accessors="true" extends="AbstractQueueProvider" {
 						q2.whereNull( "reservedBy" );
 						q2.whereNull( "reservedDate" );
 					} )
-					.orWhere(
-						"availableDate",
-						"<=",
-						variables.getCurrentUnixTimestamp()
-					);
+					.orWhere( ( q2 ) => {
+						q2.whereNotNull( "reservedDate" )
+							.where(
+								"availableDate",
+								"<=",
+								variables.getCurrentUnixTimestamp()
+							);
+					} );
 			} )
 			.update(
 				values = {
