@@ -394,11 +394,11 @@ component accessors="true" extends="AbstractQueueProvider" {
 							variables.getCurrentUnixTimestamp()
 						);
 				} );
-				// past the reserved date
+				// past the job's own timeout (availableDate was set to now + jobTimeout at reservation time)
 				q1.orWhere(
-					"reservedDate",
+					"availableDate",
 					"<=",
-					variables.getCurrentUnixTimestamp() - pool.getTimeout()
+					variables.getCurrentUnixTimestamp()
 				);
 				// reserved by a worker but never released
 				q1.orWhere( ( q3 ) => {
@@ -449,9 +449,9 @@ component accessors="true" extends="AbstractQueueProvider" {
 						q2.whereNull( "reservedDate" );
 					} )
 					.orWhere(
-						"reservedDate",
+						"availableDate",
 						"<=",
-						variables.getCurrentUnixTimestamp() - pool.getTimeout()
+						variables.getCurrentUnixTimestamp()
 					);
 			} )
 			.update(
