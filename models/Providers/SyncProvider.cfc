@@ -139,7 +139,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 					invoke(
 						job,
 						"onFailure",
-						{ "excpetion" : e }
+						{ "exception" : e }
 					);
 				}
 
