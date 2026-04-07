@@ -3,6 +3,7 @@ component accessors="true" {
 	property name="dispatcher" inject="provider:Dispatcher@cbq";
 	property name="cbq" inject="provider:@cbq";
 	property name="wirebox" inject="wirebox";
+	property name="log" inject="logbox:logger:{this}";
 	property name="repository";
 
 	property name="id" type="string";
@@ -50,7 +51,12 @@ component accessors="true" {
 		}
 
 		getRepository().markAsFinished( variables.id );
-		dispatchThenJobIfNeeded();
+
+		try {
+			dispatchThenJobIfNeeded();
+		} catch ( any e ) {
+			log.error( "Failed to dispatch then job for batch [#variables.id#]: #e.message#", e );
+		}
 
 		if ( counts.allJobsHaveRanExactlyOnce ) {
 			dispatchFinallyJobIfNeeded();
@@ -65,7 +71,11 @@ component accessors="true" {
 				cancel();
 			}
 
-			dispatchCatchJobIfNeeded( arguments.error );
+			try {
+				dispatchCatchJobIfNeeded( arguments.error );
+			} catch ( any e ) {
+				log.error( "Failed to dispatch catch job for batch [#variables.id#]: #e.message#", e );
+			}
 		}
 
 		if ( counts.allJobsHaveRanExactlyOnce ) {
