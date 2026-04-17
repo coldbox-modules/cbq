@@ -59,6 +59,23 @@ component accessors="true" extends="AbstractQueueProvider" {
 
 				for ( var job in lockedRecords ) {
 					var jobCFC = variables.deserializeJob( job.payload, job.id, job.attempts );
+
+					var jobMaxAttempts = getMaxAttemptsForJob( jobCFC, pool );
+					if ( jobMaxAttempts != 0 && job.attempts >= jobMaxAttempts ) {
+						if ( log.canWarn() ) {
+							log.warn(
+								"Job ###jobCFC.getId()# already has #job.attempts# attempts (max #jobMaxAttempts#). Marking as failed without further retry.",
+								{ "job" : jobCFC.getMemento() }
+							);
+						}
+						markJobAsFailedById( job.id, pool );
+						ensureFailedBatchJobIsRecorded(
+							jobCFC,
+							"Job exceeded maximum attempts (#jobMaxAttempts#) before execution."
+						);
+						continue;
+					}
+
 					incrementJobAttempts( jobCFC, pool );
 					application.cbController.getModuleService().loadMappings();
 					variables.marshalJob(
