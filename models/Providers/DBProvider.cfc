@@ -340,6 +340,28 @@ component accessors="true" extends="AbstractQueueProvider" {
 			.update( values = { "completedDate" : getCurrentUnixTimestamp() }, options = variables.defaultQueryOptions );
 	}
 
+	public void function forceFailJob( required any id, WorkerPool pool ) {
+		newQuery()
+			.table( variables.tableName )
+			.where( "id", arguments.id )
+			.update(
+				values = {
+					"failedDate" : getCurrentUnixTimestamp(),
+					"reservedBy" : {
+						"value" : "",
+						"null" : true,
+						"nulls" : true
+					},
+					"reservedDate" : {
+						"value" : "",
+						"null" : true,
+						"nulls" : true
+					}
+				},
+				options = variables.defaultQueryOptions
+			);
+	}
+
 	private void function markJobAsFailedById( required numeric id, WorkerPool pool ) {
 		newQuery()
 			.table( variables.tableName )
