@@ -170,116 +170,130 @@ component accessors="true" {
 				}
 			} )
 			.onException( function( e ) {
-				// log failed job
-				if ( !isNull( e ) && "java.util.concurrent.CompletionException" == e.getClass().getName() ) {
-					var rootCause = e.getCause();
-					if ( !isNull( rootCause ) ) {
-						e = rootCause;
-					}
-				}
-
-				if ( log.canError() ) {
-					log.error(
-						"Exception when running job: #e.message#",
-						{
-							"job" : job.getMemento(),
-							"exception" : isNull( e ) ? javacast( "null", "" ) : e
+				try {
+					// log failed job
+					if ( !isNull( e ) && "java.util.concurrent.CompletionException" == e.getClass().getName() ) {
+						var rootCause = e.getCause();
+						if ( !isNull( rootCause ) ) {
+							e = rootCause;
 						}
-					);
-				}
-
-				afterJobException(
-					job.getId(),
-					job,
-					pool,
-					isNull( e ) ? javacast( "null", "" ) : e
-				);
-
-				variables.interceptorService.announce(
-					"onCBQJobException",
-					{
-						"job" : job,
-						"pool" : pool,
-						"exception" : isNull( e ) ? javacast( "null", "" ) : e
-					}
-				);
-
-				var jobMaxAttempts = getMaxAttemptsForJob( job, pool );
-				if ( job.getIsCancelled() ) {
-					if ( variables.log.canDebug() ) {
-						variables.log.debug( "Job [#job.getId()#] was cancelled. Reason: #job.getCancelledReason()#. Deleting job [#job.getId()#]." );
 					}
 
-					if ( structKeyExists( job, "onFailure" ) ) {
-						invoke(
-							job,
-							"onFailure",
-							{ "exception" : isNull( e ) ? javacast( "null", "" ) : e }
+					if ( log.canError() ) {
+						log.error(
+							"Exception when running job: #e.message#",
+							{
+								"job" : job.getMemento(),
+								"exception" : isNull( e ) ? javacast( "null", "" ) : e
+							}
 						);
 					}
 
-					variables.interceptorService.announce(
-						"onCBQJobFailed",
-						{
-							"job" : job,
-							"exception" : isNull( e ) ? javacast( "null", "" ) : e
-						}
-					);
-
-					afterJobFailed(
-						job.getId(),
-						job,
-						pool,
-						isNull( e ) ? javacast( "null", "" ) : e
-					);
-					ensureFailedBatchJobIsRecorded( job, isNull( e ) ? javacast( "null", "" ) : e );
-
-					variables.log.debug( "Marked job ###job.getId()# as failed after being cancelled." );
-				} else if ( jobMaxAttempts == 0 || job.getCurrentAttempt() < jobMaxAttempts ) {
-					if ( jobMaxAttempts == 0 && variables.log.canDebug() ) {
-						variables.log.debug( "Job ###job.getId()# has a maxAttempts of 0 and will always be released." );
-					}
-					if ( variables.log.canDebug() ) {
-						variables.log.debug( "Releasing job ###job.getId()#" );
-					}
-					releaseJob( job, pool );
-					if ( variables.log.canDebug() ) {
-						variables.log.debug( "Released job ###job.getId()#" );
-					}
-				} else {
-					if ( variables.log.canDebug() ) {
-						variables.log.debug( "Maximum attempts reached. Deleting job ###job.getId()#" );
-					}
-
-					if ( structKeyExists( job, "onFailure" ) ) {
-						invoke(
+					try {
+						afterJobException(
+							job.getId(),
 							job,
-							"onFailure",
-							{ "exception" : isNull( e ) ? javacast( "null", "" ) : e }
+							pool,
+							isNull( e ) ? javacast( "null", "" ) : e
+						);
+					} catch ( any sideEffectException ) {
+						logSideEffectFailure(
+							"afterJobException",
+							job,
+							sideEffectException
 						);
 					}
 
-					variables.interceptorService.announce(
-						"onCBQJobFailed",
-						{
-							"job" : job,
-							"exception" : isNull( e ) ? javacast( "null", "" ) : e
+					try {
+						variables.interceptorService.announce(
+							"onCBQJobException",
+							{
+								"job" : job,
+								"pool" : pool,
+								"exception" : isNull( e ) ? javacast( "null", "" ) : e
+							}
+						);
+					} catch ( any sideEffectException ) {
+						logSideEffectFailure(
+							"onCBQJobException",
+							job,
+							sideEffectException
+						);
+					}
+
+					var jobMaxAttempts = getMaxAttemptsForJob( job, pool );
+					if ( job.getIsCancelled() ) {
+						if ( variables.log.canDebug() ) {
+							variables.log.debug( "Job [#job.getId()#] was cancelled. Reason: #job.getCancelledReason()#. Deleting job [#job.getId()#]." );
 						}
-					);
-
-					afterJobFailed(
-						job.getId(),
-						job,
-						pool,
-						isNull( e ) ? javacast( "null", "" ) : e
-					);
-					ensureFailedBatchJobIsRecorded( job, isNull( e ) ? javacast( "null", "" ) : e );
-
-					variables.log.debug( "Marked job ###job.getId()# as failed after maximum failed attempts." );
+						markJobFailed(
+							job,
+							pool,
+							isNull( e ) ? javacast( "null", "" ) : e
+						);
+						variables.log.debug( "Marked job ###job.getId()# as failed after being cancelled." );
+					} else if ( jobMaxAttempts == 0 || job.getCurrentAttempt() < jobMaxAttempts ) {
+						if ( jobMaxAttempts == 0 && variables.log.canDebug() ) {
+							variables.log.debug( "Job ###job.getId()# has a maxAttempts of 0 and will always be released." );
+						}
+						if ( variables.log.canDebug() ) {
+							variables.log.debug( "Releasing job ###job.getId()#" );
+						}
+						try {
+							releaseJob( job, pool );
+							if ( variables.log.canDebug() ) {
+								variables.log.debug( "Released job ###job.getId()#" );
+							}
+						} catch ( any releaseException ) {
+							log.error(
+								"releaseJob failed for job ###job.getId()#. Falling back to terminal failure to prevent timeout-based re-pickup.",
+								{
+									"job" : job.getMemento(),
+									"originalException" : isNull( e ) ? javacast( "null", "" ) : e,
+									"releaseException" : releaseException
+								}
+							);
+							markJobFailed(
+								job,
+								pool,
+								isNull( e ) ? javacast( "null", "" ) : e
+							);
+						}
+					} else {
+						if ( variables.log.canDebug() ) {
+							variables.log.debug( "Maximum attempts reached. Deleting job ###job.getId()#" );
+						}
+						markJobFailed(
+							job,
+							pool,
+							isNull( e ) ? javacast( "null", "" ) : e
+						);
+						variables.log.debug( "Marked job ###job.getId()# as failed after maximum failed attempts." );
+					}
+				} catch ( any outerException ) {
+					try {
+						log.error(
+							"Critical: .onException handler failed for job ###job.getId()#. Forcing terminal failure.",
+							{
+								"job" : job.getMemento(),
+								"originalException" : isNull( e ) ? javacast( "null", "" ) : e,
+								"handlerException" : outerException
+							}
+						);
+					} catch ( any ignored ) {
+					}
+					try {
+						forceFailJob( job.getId(), pool );
+					} catch ( any ignored ) {
+					}
 				}
 
 				if ( !isNull( afterJobHook ) && ( isCustomFunction( afterJobHook ) || isClosure( afterJobHook ) ) ) {
-					afterJobHook( job, pool );
+					try {
+						afterJobHook( job, pool );
+					} catch ( any hookException ) {
+						logSideEffectFailure( "afterJobHook", job, hookException );
+					}
 				}
 			} );
 	}
@@ -308,6 +322,104 @@ component accessors="true" {
 		any exception
 	) {
 		return;
+	}
+
+	/**
+	 * Last-resort terminal failure for a job. Providers should override this with
+	 * a minimal, bulletproof write that takes the job out of any retry loop, even
+	 * when the normal afterJobFailed path has already failed. Skips bookkeeping
+	 * (onFailure hook, interceptors, batch recording) by design — it only runs
+	 * when those paths themselves are broken.
+	 */
+	public void function forceFailJob( required any id, WorkerPool pool ) {
+		return;
+	}
+
+	private void function markJobFailed(
+		required AbstractJob job,
+		required WorkerPool pool,
+		any exception
+	) {
+		if ( structKeyExists( arguments.job, "onFailure" ) ) {
+			try {
+				invoke(
+					arguments.job,
+					"onFailure",
+					{ "exception" : isNull( arguments.exception ) ? javacast( "null", "" ) : arguments.exception }
+				);
+			} catch ( any sideEffectException ) {
+				logSideEffectFailure(
+					"onFailure",
+					arguments.job,
+					sideEffectException
+				);
+			}
+		}
+
+		try {
+			variables.interceptorService.announce(
+				"onCBQJobFailed",
+				{
+					"job" : arguments.job,
+					"exception" : isNull( arguments.exception ) ? javacast( "null", "" ) : arguments.exception
+				}
+			);
+		} catch ( any sideEffectException ) {
+			logSideEffectFailure(
+				"onCBQJobFailed",
+				arguments.job,
+				sideEffectException
+			);
+		}
+
+		try {
+			afterJobFailed(
+				arguments.job.getId(),
+				arguments.job,
+				arguments.pool,
+				isNull( arguments.exception ) ? javacast( "null", "" ) : arguments.exception
+			);
+		} catch ( any sideEffectException ) {
+			logSideEffectFailure(
+				"afterJobFailed",
+				arguments.job,
+				sideEffectException
+			);
+			// afterJobFailed is what writes failedDate in DBProvider; if it threw, fall back.
+			try {
+				forceFailJob( arguments.job.getId(), arguments.pool );
+			} catch ( any ignored ) {
+			}
+		}
+
+		try {
+			ensureFailedBatchJobIsRecorded(
+				arguments.job,
+				isNull( arguments.exception ) ? javacast( "null", "" ) : arguments.exception
+			);
+		} catch ( any sideEffectException ) {
+			logSideEffectFailure(
+				"ensureFailedBatchJobIsRecorded",
+				arguments.job,
+				sideEffectException
+			);
+		}
+	}
+
+	private void function logSideEffectFailure(
+		required string stage,
+		required AbstractJob job,
+		required any exception
+	) {
+		try {
+			if ( log.canError() ) {
+				log.error(
+					"Side effect [#arguments.stage#] threw for job ###arguments.job.getId()#: #arguments.exception.message#",
+					{ "exception" : arguments.exception }
+				);
+			}
+		} catch ( any ignored ) {
+		}
 	}
 
 	public void function releaseJob( required AbstractJob job, required WorkerPool pool ) {
