@@ -58,35 +58,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 				var lockedRecords = fetchLockedRecords( capacity, pool );
 
 				for ( var job in lockedRecords ) {
-					var jobCFC = variables.deserializeJob( job.payload, job.id, job.attempts );
-
-					var jobMaxAttempts = getMaxAttemptsForJob( jobCFC, pool );
-					if ( jobMaxAttempts != 0 && job.attempts >= jobMaxAttempts ) {
-						if ( log.canWarn() ) {
-							log.warn(
-								"Job ###jobCFC.getId()# already has #job.attempts# attempts (max #jobMaxAttempts#). Marking as failed without further retry.",
-								{ "job" : jobCFC.getMemento() }
-							);
-						}
-						markJobAsFailedById( job.id, pool );
-						ensureFailedBatchJobIsRecorded(
-							jobCFC,
-							"Job exceeded maximum attempts (#jobMaxAttempts#) before execution."
-						);
-						continue;
-					}
-
-					incrementJobAttempts( jobCFC, pool );
-					application.cbController.getModuleService().loadMappings();
-					variables.marshalJob(
-						job = jobCFC,
-						pool = pool,
-						afterJobHook = () => {
-							// variables.log.debug( "Job finished. Immediately running the scheduled task again." );
-							// forceRun = true;
-							// task.run();
-						}
-					);
+					processLockedRecord( job, pool );
 				}
 
 				return lockedRecords.len();
@@ -290,6 +262,39 @@ component accessors="true" extends="AbstractQueueProvider" {
 
 	public boolean function supportsMultipleQueues() {
 		return true;
+	}
+
+	private void function processLockedRecord( required any record, required WorkerPool pool ) {
+		var jobCFC = variables.deserializeJob(
+			arguments.record.payload,
+			arguments.record.id,
+			arguments.record.attempts
+		);
+
+		var jobMaxAttempts = getMaxAttemptsForJob( jobCFC, arguments.pool );
+		if ( jobMaxAttempts != 0 && arguments.record.attempts >= jobMaxAttempts ) {
+			if ( log.canWarn() ) {
+				log.warn(
+					"Job ###jobCFC.getId()# already has #arguments.record.attempts# attempts (max #jobMaxAttempts#). Marking as failed without further retry.",
+					{ "job" : jobCFC.getMemento() }
+				);
+			}
+			markJobAsFailedById( arguments.record.id, arguments.pool );
+			ensureFailedBatchJobIsRecorded(
+				jobCFC,
+				"Job exceeded maximum attempts (#jobMaxAttempts#) before execution."
+			);
+			return;
+		}
+
+		incrementJobAttempts( jobCFC, arguments.pool );
+		application.cbController.getModuleService().loadMappings();
+		variables.marshalJob(
+			job = jobCFC,
+			pool = arguments.pool,
+			afterJobHook = () => {
+			}
+		);
 	}
 
 	private void function incrementJobAttempts( required AbstractJob job, required WorkerPool pool ) {
