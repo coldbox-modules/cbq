@@ -189,7 +189,6 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 					.from( "cbq_jobs" )
 					.where( "id", jobId )
 					.first();
-
 				expect( row.failedDate ?: "" ).notToBe(
 					"",
 					"the row must be marked failed even when releaseJob throws, otherwise the timeout watcher will retry it forever"
