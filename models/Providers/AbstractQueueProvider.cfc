@@ -245,14 +245,17 @@ component accessors="true" {
 								variables.log.debug( "Released job ###job.getId()#" );
 							}
 						} catch ( any releaseException ) {
-							log.error(
-								"releaseJob failed for job ###job.getId()#. Falling back to terminal failure to prevent timeout-based re-pickup.",
-								{
-									"job" : job.getMemento(),
-									"originalException" : isNull( e ) ? javacast( "null", "" ) : e,
-									"releaseException" : releaseException
-								}
-							);
+							try {
+								log.error(
+									"releaseJob failed for job ###job.getId()#. Falling back to terminal failure to prevent timeout-based re-pickup.",
+									{
+										"job" : job.getMemento(),
+										"originalException" : isNull( e ) ? javacast( "null", "" ) : e,
+										"releaseException" : releaseException
+									}
+								);
+							} catch ( any ignored ) {
+							}
 							markJobFailed(
 								job,
 								pool,
