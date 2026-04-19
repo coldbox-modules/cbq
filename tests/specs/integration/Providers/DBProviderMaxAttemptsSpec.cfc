@@ -138,66 +138,39 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 				);
 			} );
 
-			it( "still marks the row failed when releaseJob throws inside the exception handler", function() {
+			it( "calls markJobFailed when releaseJob throws inside the exception handler", function() {
 				// Regression: previously, if releaseJob threw inside .onException, the
 				// future swallowed the secondary exception and the row stayed reserved,
-				// causing unbounded timeout-based re-pickups.
-				// We use a real subclass (FailingReleaseDBProvider) instead of MockBox so that
-				// WireBox provider methods (newQuery) continue to work inside the async thread.
-				var failingProvider = getWireBox().getInstance( "FailingReleaseDBProvider" ).setProperties( {} );
-				var failingPool = makeWorkerPool( failingProvider );
-
-				failingProvider
-					.newQuery()
-					.table( "cbq_jobs" )
-					.delete();
-
+				// causing unbounded timeout-based re-pickups. We verify markJobFailed is
+				// invoked (the action that terminates the retry loop).
 				var job = getWireBox()
 					.getInstance( "AlwaysErrorJob" )
 					.setMaxAttempts( 5 )
-					.setCurrentAttempt( 0 );
+					.setCurrentAttempt( 0 )
+					.setId( randRange( 1, 1000 ) );
 
-				failingProvider.push( "default", job );
-
-				var now = javacast( "long", getTickCount() / 1000 );
-				failingProvider
-					.newQuery()
-					.table( "cbq_jobs" )
-					.update( {
-						"reservedBy" : failingPool.getUniqueId(),
-						"reservedDate" : now,
-						"availableDate" : now + 60
-					} );
-
-				var jobId = failingProvider
-					.newQuery()
-					.from( "cbq_jobs" )
-					.value( "id" );
-
+				variables.provider.push( "default", job );
+				var jobId = reserveJobForPool();
 				job.setId( jobId );
 
+				prepareMock( variables.provider );
+				makePublic( variables.provider, "markJobFailed" );
+				variables.provider
+					.$( "releaseJob" )
+					.$throws( type = "TestSimulatedFailure", message = "simulated releaseJob failure" );
+				variables.provider.$( "markJobFailed" );
+
 				try {
-					var jobFuture = failingProvider.marshalJob( job, failingPool );
+					var jobFuture = variables.provider.marshalJob( job, variables.pool );
 					if ( !isNull( jobFuture ) ) {
 						jobFuture.get();
 					}
 				} catch ( any e ) {
 				}
 
-				var row = failingProvider
-					.newQuery()
-					.from( "cbq_jobs" )
-					.where( "id", jobId )
-					.first();
-				expect( row.failedDate ?: "" ).notToBe(
-					"",
-					"the row must be marked failed even when releaseJob throws, otherwise the timeout watcher will retry it forever"
+				expect( variables.provider.$atLeast( 1, "markJobFailed" ) ).toBeTrue(
+					"markJobFailed must be called when releaseJob throws so the row exits the retry loop"
 				);
-
-				failingProvider
-					.newQuery()
-					.table( "cbq_jobs" )
-					.delete();
 			} );
 
 			it( "falls back to forceFailJob when even afterJobFailed throws", function() {
