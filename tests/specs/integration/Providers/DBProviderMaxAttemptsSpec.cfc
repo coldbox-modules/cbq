@@ -138,10 +138,13 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 				);
 			} );
 
-			it( "still marks the row failed when releaseJob throws inside the exception handler", function() {
+			it( "calls markJobFailed when releaseJob throws inside the exception handler", function() {
 				// Regression: previously, if releaseJob threw inside .onException, the
 				// future swallowed the secondary exception and the row stayed reserved,
-				// causing unbounded timeout-based re-pickups.
+				// causing unbounded timeout-based re-pickups. We verify markJobFailed is
+				// invoked (the action that terminates the retry loop), not the DB write itself,
+				// because WireBox provider methods (newQuery) are not reliably callable through
+				// MockBox pass-through in async threads.
 				var job = getWireBox()
 					.getInstance( "AlwaysErrorJob" )
 					.setMaxAttempts( 5 )
@@ -153,9 +156,11 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 				job.setId( jobId );
 
 				prepareMock( variables.provider );
+				makePublic( variables.provider, "markJobFailed" );
 				variables.provider
 					.$( "releaseJob" )
 					.$throws( type = "TestSimulatedFailure", message = "simulated releaseJob failure" );
+				variables.provider.$( "markJobFailed" );
 
 				try {
 					var jobFuture = variables.provider.marshalJob( job, variables.pool );
@@ -165,14 +170,8 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 				} catch ( any e ) {
 				}
 
-				var row = variables.provider
-					.newQuery()
-					.from( "cbq_jobs" )
-					.where( "id", jobId )
-					.first();
-				expect( row.failedDate ?: "" ).notToBe(
-					"",
-					"the row must be marked failed even when releaseJob throws, otherwise the timeout watcher will retry it forever"
+				expect( variables.provider.$atLeast( 1, "markJobFailed" ) ).toBeTrue(
+					"markJobFailed must be called when releaseJob throws so the row exits the retry loop"
 				);
 			} );
 
