@@ -4,7 +4,7 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 		describe( "SyncProvider onFailure exception argument", function() {
 			beforeEach( function() {
 				structDelete( application, "onFailureExceptionReceived" );
-				structDelete( application, "onFailureExceptionIsExpcetion" );
+				structDelete( application, "onFailureExceptionHasExcpetionKey" );
 			} );
 
 			it( "passes the exception as 'exception' (not 'excpetion') to the onFailure handler", function() {
@@ -16,14 +16,14 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 					.setMaxAttempts( 1 );
 
 				param application.onFailureExceptionReceived = false;
-				param application.onFailureExceptionIsExpcetion = true;
+				param application.onFailureExceptionHasExcpetionKey = true;
 
 				expect( () => provider.marshalJob( job, pool ) ).toThrow();
 
 				expect( application.onFailureExceptionReceived ).toBeTrue(
 					"onFailure should receive the exception under the key 'exception'"
 				);
-				expect( application.onFailureExceptionIsExpcetion ).toBeFalse(
+				expect( application.onFailureExceptionHasExcpetionKey ).toBeFalse(
 					"onFailure should NOT receive the exception under the misspelled key 'excpetion'"
 				);
 			} );
