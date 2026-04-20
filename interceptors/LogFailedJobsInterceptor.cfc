@@ -36,8 +36,14 @@ component {
 			"connection" : connectionName,
 			"queue" : queueName,
 			"mapping" : arguments.data.job.getMapping(),
-			"memento" : serializeJSON( arguments.data.job.getMemento() ),
-			"properties" : serializeJSON( arguments.data.job.getProperties() ),
+			"memento" : {
+				"value" : serializeJSON( arguments.data.job.getMemento() ),
+				"cfsqltype" : "CF_SQL_LONGVARCHAR"
+			},
+			"properties" : {
+				"value" : serializeJSON( arguments.data.job.getProperties() ),
+				"cfsqltype" : "CF_SQL_LONGVARCHAR"
+			},
 			"exceptionType" : {
 				"value" : arguments.data.exception.type ?: "",
 				"cfsqltype" : "CF_SQL_VARCHAR",
@@ -58,7 +64,7 @@ component {
 			},
 			"exceptionExtendedInfo" : {
 				"value" : arguments.data.exception.extendedInfo ?: "",
-				"cfsqltype" : "CF_SQL_VARCHAR",
+				"cfsqltype" : "CF_SQL_LONGVARCHAR",
 				"null" : ( arguments.data.exception.extendedInfo ?: "" ) == "",
 				"nulls" : ( arguments.data.exception.extendedInfo ?: "" ) == ""
 			},
@@ -68,7 +74,7 @@ component {
 						arguments.data.exception.stackTrace
 					)
 				),
-				"cfsqltype" : "CF_SQL_VARCHAR",
+				"cfsqltype" : "CF_SQL_LONGVARCHAR",
 				"null" : isNull( arguments.data.exception.stackTrace ) || (
 					isSimpleValue( arguments.data.exception.stackTrace ) && arguments.data.exception.stackTrace == ""
 				),
@@ -76,9 +82,14 @@ component {
 					isSimpleValue( arguments.data.exception.stackTrace ) && arguments.data.exception.stackTrace == ""
 				)
 			},
-			"exception" : isNull( arguments.data.exception ) ? javacast( "null", "" ) : serializeJSON(
-				arguments.data.exception
-			),
+			"exception" : {
+				"value" : isNull( arguments.data.exception ) ? javacast( "null", "" ) : serializeJSON(
+					arguments.data.exception
+				),
+				"cfsqltype" : "CF_SQL_LONGVARCHAR",
+				"null" : isNull( arguments.data.exception ),
+				"nulls" : isNull( arguments.data.exception )
+			},
 			"failedDate" : {
 				"value" : getCurrentUnixTimestamp(),
 				"cfsqltype" : "CF_SQL_BIGINT"
