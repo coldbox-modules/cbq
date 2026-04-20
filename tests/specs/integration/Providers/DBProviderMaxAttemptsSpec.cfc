@@ -151,7 +151,6 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 					.newQuery()
 					.table( "cbq_jobs" )
 					.delete();
-
 				var job = getWireBox()
 					.getInstance( "AlwaysErrorJob" )
 					.setMaxAttempts( 5 )
