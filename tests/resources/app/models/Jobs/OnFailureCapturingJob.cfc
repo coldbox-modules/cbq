@@ -9,7 +9,7 @@ component extends="cbq.models.Jobs.AbstractJob" {
 
 	function onFailure() {
 		application.onFailureExceptionReceived = !isNull( arguments.exception );
-		application.onFailureExceptionIsExpcetion = structKeyExists( arguments, "excpetion" );
+		application.onFailureExceptionHasExcpetionKey = structKeyExists( arguments, "excpetion" );
 	}
 
 }

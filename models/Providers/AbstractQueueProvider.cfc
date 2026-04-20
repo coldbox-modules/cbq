@@ -166,7 +166,15 @@ component accessors="true" {
 				dispatchNextJobInChain( job, pool );
 
 				if ( !isNull( afterJobHook ) && ( isCustomFunction( afterJobHook ) || isClosure( afterJobHook ) ) ) {
-					afterJobHook( job, pool );
+					try {
+						afterJobHook( job, pool );
+					} catch ( any sideEffectException ) {
+						logSideEffectFailure(
+							"afterJobHook",
+							job,
+							sideEffectException
+						);
+					}
 				}
 			} )
 			.onException( function( e ) {
