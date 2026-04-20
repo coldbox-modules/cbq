@@ -9,7 +9,7 @@ component extends="cbq.models.Providers.DBProvider" {
 
 	public void function releaseJob( required any job, required any pool ) {
 		throw(
-			type    = "FailingReleaseDBProvider.SimulatedFailure",
+			type = "FailingReleaseDBProvider.SimulatedFailure",
 			message = "Simulated releaseJob failure for testing"
 		);
 	}
