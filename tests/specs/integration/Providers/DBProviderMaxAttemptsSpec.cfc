@@ -144,9 +144,7 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 				// causing unbounded timeout-based re-pickups.
 				// We use a real subclass (FailingReleaseDBProvider) instead of MockBox so that
 				// WireBox provider methods (newQuery) continue to work inside the async thread.
-				var failingProvider = getWireBox()
-					.getInstance( "FailingReleaseDBProvider" )
-					.setProperties( {} );
+				var failingProvider = getWireBox().getInstance( "FailingReleaseDBProvider" ).setProperties( {} );
 				var failingPool = makeWorkerPool( failingProvider );
 
 				failingProvider
@@ -166,9 +164,9 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 					.newQuery()
 					.table( "cbq_jobs" )
 					.update( {
-						"reservedBy"   : failingPool.getUniqueId(),
+						"reservedBy" : failingPool.getUniqueId(),
 						"reservedDate" : now,
-						"availableDate": now + 60
+						"availableDate" : now + 60
 					} );
 
 				var jobId = failingProvider
