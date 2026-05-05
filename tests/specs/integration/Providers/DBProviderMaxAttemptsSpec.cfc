@@ -3,23 +3,44 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 	function run() {
 		describe( "DBProvider maxAttempts safeguards", function() {
 			beforeEach( function() {
-				variables.provider = getWireBox().getInstance( "DBProvider@cbq" ).setProperties( {} );
+				variables.workerPools = [];
+				variables.provider = getWireBox()
+					.buildInstance( getWireBox().getBinder().getMapping( "DBProvider@cbq" ) )
+					.setProperties( {} );
+				getWireBox().autowire(
+					target = variables.provider,
+					mapping = getWireBox().getBinder().getMapping( "DBProvider@cbq" )
+				);
 				makePublic( variables.provider, "processLockedRecord" );
 				variables.pool = makeWorkerPool( variables.provider );
+				variables.cbqSettings = getController().getModuleSettings( "cbq" );
+				variables.originalLogFailedJobs = variables.cbqSettings.logFailedJobs;
 				variables.provider
 					.newQuery()
 					.table( "cbq_jobs" )
+					.delete();
+				variables.provider
+					.newQuery()
+					.table( "cbq_failed_jobs" )
 					.delete();
 			} );
 
 			afterEach( function() {
+				for ( var pool in variables.workerPools ) {
+					pool.shutdown( force = true, timeout = 1 );
+				}
+				variables.cbqSettings.logFailedJobs = variables.originalLogFailedJobs;
 				variables.provider
 					.newQuery()
 					.table( "cbq_jobs" )
 					.delete();
+				variables.provider
+					.newQuery()
+					.table( "cbq_failed_jobs" )
+					.delete();
 			} );
 
-			it( "forceFailJob sets failedDate and clears the reservation", function() {
+			it( "forceFailJob sets failedDate and preserves the reservation", function() {
 				var job = getWireBox().getInstance( "SendWelcomeEmailJob" ).setMaxAttempts( 3 );
 				variables.provider.push( "default", job );
 
@@ -49,8 +70,8 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 
 				expect( row.failedDate ).notToBeNull( "failedDate should be set" );
 				expect( row.failedDate ).toBeGT( 0, "failedDate should be a unix timestamp" );
-				expect( row.reservedBy ?: "" ).toBe( "", "reservedBy should be cleared" );
-				expect( row.reservedDate ?: "" ).toBe( "", "reservedDate should be cleared" );
+				expect( row.reservedBy ?: "" ).toBe( variables.pool.getUniqueId(), "reservedBy should be preserved" );
+				expect( row.reservedDate ).toBe( now, "reservedDate should be preserved" );
 			} );
 
 			it( "skips dispatch and marks the job failed when attempts already meets maxAttempts", function() {
@@ -98,6 +119,93 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 					.where( "id", record.id )
 					.first();
 				expect( row.failedDate ).notToBeNull( "the runaway job should be marked failed" );
+				expect( row.reservedBy ?: "" ).toBe(
+					variables.pool.getUniqueId(),
+					"reservedBy should be preserved after terminal failure"
+				);
+				expect( row.reservedDate ?: "" ).toBe(
+					"",
+					"reservedDate should remain unchanged after terminal failure"
+				);
+			} );
+
+			it( "logs a failed job when a timeout retry already meets maxAttempts before dispatch", function() {
+				variables.cbqSettings.logFailedJobs = true;
+				var job = getWireBox().getInstance( "AlwaysErrorJob" ).setMaxAttempts( 3 );
+				variables.provider.push( "default", job );
+
+				var now = javacast( "long", getTickCount() / 1000 );
+				variables.provider
+					.newQuery()
+					.table( "cbq_jobs" )
+					.update( {
+						"reservedBy" : variables.pool.getUniqueId(),
+						"reservedDate" : {
+							"value" : "",
+							"null" : true,
+							"nulls" : true
+						},
+						"availableDate" : now - 1,
+						"attempts" : 3
+					} );
+
+				var record = variables.provider
+					.newQuery()
+					.from( "cbq_jobs" )
+					.first();
+
+				variables.provider.processLockedRecord( record, variables.pool );
+
+				var failedLog = variables.provider
+					.newQuery()
+					.from( "cbq_failed_jobs" )
+					.first();
+
+				expect( failedLog ).notToBeNull(
+					"terminal maxAttempts failures discovered by the timeout watcher should be visible in the failed jobs log"
+				);
+				expect( failedLog.originalId ).toBe( record.id );
+				expect( failedLog.exceptionType ).toBe( "cbq.MaxAttemptsReached" );
+				expect( failedLog.exceptionMessage ).toInclude( "exceeded maximum attempts" );
+			} );
+
+			it( "persists the terminal attempt before failing a job that reaches maxAttempts during execution", function() {
+				var job = getWireBox().getInstance( "AlwaysErrorJob" ).setMaxAttempts( 3 );
+				variables.provider.push( "default", job );
+
+				var now = javacast( "long", getTickCount() / 1000 );
+				variables.provider
+					.newQuery()
+					.table( "cbq_jobs" )
+					.update( {
+						"reservedBy" : variables.pool.getUniqueId(),
+						"reservedDate" : {
+							"value" : "",
+							"null" : true,
+							"nulls" : true
+						},
+						"availableDate" : now - 1,
+						"attempts" : 2
+					} );
+
+				var record = variables.provider
+					.newQuery()
+					.from( "cbq_jobs" )
+					.first();
+
+				variables.provider.processLockedRecord( record, variables.pool );
+				var row = waitForFailedJobRow( record.id );
+
+				expect( row.failedDate ).notToBeNull( "the third failed run should mark the row failed" );
+				expect( row.attempts ).toBe( 3, "the terminal third run should be reflected in the attempts column" );
+				expect( row.reservedBy ?: "" ).toBe(
+					variables.pool.getUniqueId(),
+					"reservedBy should be preserved after terminal failure"
+				);
+				expect( row.reservedDate ?: "" ).notToBe(
+					"",
+					"reservedDate should be preserved after terminal failure"
+				);
 			} );
 
 			it( "still proceeds normally when attempts is below maxAttempts", function() {
@@ -252,16 +360,39 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 			.value( "id" );
 	}
 
+	private struct function waitForFailedJobRow( required numeric id ) {
+		for ( var i = 1; i <= 20; i++ ) {
+			var row = variables.provider
+				.newQuery()
+				.from( "cbq_jobs" )
+				.where( "id", arguments.id )
+				.first();
+			if ( !isNull( row.failedDate ) && row.attempts == 3 ) {
+				return row;
+			}
+			sleep( 100 );
+		}
+
+		return variables.provider
+			.newQuery()
+			.from( "cbq_jobs" )
+			.where( "id", arguments.id )
+			.first();
+	}
+
 	private any function makeWorkerPool( required any provider ) {
+		var uniqueName = createUUID();
 		var connection = getInstance( "QueueConnection@cbq" )
-			.setName( "TestMaxAttemptsConnection" )
+			.setName( "TestMaxAttemptsConnection-#uniqueName#" )
 			.setProvider( arguments.provider );
 
-		return getInstance( "WorkerPool@cbq" )
-			.setName( "TestMaxAttemptsPool" )
+		var pool = getInstance( "WorkerPool@cbq" )
+			.setName( "TestMaxAttemptsPool-#uniqueName#" )
 			.setConnection( connection )
 			.setConnectionName( connection.getName() )
 			.startWorkers();
+		variables.workerPools.append( pool );
+		return pool;
 	}
 
 }

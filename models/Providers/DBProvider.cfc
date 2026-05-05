@@ -279,10 +279,10 @@ component accessors="true" extends="AbstractQueueProvider" {
 					{ "job" : jobCFC.getMemento() }
 				);
 			}
-			markJobAsFailedById( arguments.record.id, arguments.pool );
-			ensureFailedBatchJobIsRecorded(
+			markJobFailed(
 				jobCFC,
-				"Job exceeded maximum attempts (#jobMaxAttempts#) before execution."
+				arguments.pool,
+				buildMaxAttemptsReachedException( jobCFC, jobMaxAttempts )
 			);
 			return;
 		}
@@ -349,22 +349,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 		newQuery()
 			.table( variables.tableName )
 			.where( "id", arguments.id )
-			.update(
-				values = {
-					"failedDate" : getCurrentUnixTimestamp(),
-					"reservedBy" : {
-						"value" : "",
-						"null" : true,
-						"nulls" : true
-					},
-					"reservedDate" : {
-						"value" : "",
-						"null" : true,
-						"nulls" : true
-					}
-				},
-				options = variables.defaultQueryOptions
-			);
+			.update( values = { "failedDate" : getCurrentUnixTimestamp() }, options = variables.defaultQueryOptions );
 	}
 
 	private void function markJobAsFailedById( required numeric id, WorkerPool pool ) {
@@ -379,6 +364,17 @@ component accessors="true" extends="AbstractQueueProvider" {
 				q.whereNull( "failedDate" );
 			} )
 			.update( values = { "failedDate" : getCurrentUnixTimestamp() }, options = variables.defaultQueryOptions );
+	}
+
+	private any function buildMaxAttemptsReachedException( required AbstractJob job, required numeric maxAttempts ) {
+		try {
+			throw(
+				type = "cbq.MaxAttemptsReached",
+				message = "Job ###arguments.job.getId()# exceeded maximum attempts (#arguments.maxAttempts#) before execution."
+			);
+		} catch ( any e ) {
+			return e;
+		}
 	}
 
 	public void function releaseJob( required AbstractJob job, required WorkerPool pool ) {
