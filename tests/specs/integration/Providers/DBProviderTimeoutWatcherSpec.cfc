@@ -5,6 +5,7 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 			beforeEach( function() {
 				variables.provider = getWireBox().getInstance( "DBProvider@cbq" ).setProperties( {} );
 				makePublic( variables.provider, "fetchPotentiallyOpenRecords" );
+				makePublic( variables.provider, "tryToLockRecords" );
 				variables.pool = makeWorkerPool( variables.provider );
 				// clean up any leftover test records
 				variables.provider
@@ -88,6 +89,41 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 				expect( ids ).toBeEmpty(
 					"A job past the pool timeout but still within its job-specific timeout should not be re-grabbed"
 				);
+			} );
+
+			it( "locks an orphaned reservation that was claimed without a reserved date", function() {
+				var job = getWireBox().getInstance( "SendWelcomeEmailJob" );
+				variables.provider.push( "default", job );
+
+				var deadWorkerUUID = createUUID();
+				var now = javacast( "long", getTickCount() / 1000 );
+				variables.provider
+					.newQuery()
+					.table( "cbq_jobs" )
+					.update( {
+						"reservedBy" : deadWorkerUUID,
+						"reservedDate" : {
+							"value" : "",
+							"null" : true,
+							"nulls" : true
+						},
+						"availableDate" : now - 1
+					} );
+
+				var ids = variables.provider.fetchPotentiallyOpenRecords( capacity = 10, pool = variables.pool );
+				variables.provider.tryToLockRecords( ids, variables.pool );
+
+				var row = variables.provider
+					.newQuery()
+					.from( "cbq_jobs" )
+					.first();
+
+				expect( ids ).toHaveLength( 1, "The orphaned reservation should be selected for reclaiming" );
+				expect( row.reservedBy ).toBe(
+					variables.pool.getUniqueId(),
+					"The live worker pool should be able to claim the orphaned reservation"
+				);
+				expect( row.reservedDate ?: "" ).toBe( "", "The job should remain pending reservation processing" );
 			} );
 		} );
 	}

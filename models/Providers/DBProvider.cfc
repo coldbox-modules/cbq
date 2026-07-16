@@ -498,6 +498,15 @@ component accessors="true" extends="AbstractQueueProvider" {
 								"<=",
 								variables.getCurrentUnixTimestamp()
 							);
+					} )
+					.orWhere( ( q2 ) => {
+						q2.whereNotNull( "reservedBy" )
+							.whereNull( "reservedDate" )
+							.where(
+								"availableDate",
+								"<=",
+								variables.getCurrentUnixTimestamp()
+							);
 					} );
 			} )
 			.update(
