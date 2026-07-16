@@ -1,4 +1,138 @@
 # v5.0.8
+## 16 Jul 2026 — 17:13:24 UTC
+
+### fix
+
++ __ColdBoxAsyncProvider:__ Compose the `marshalJob` future with the delay future
+ ([dfd6102](https://github.com/coldbox-modules/cbq/commit/dfd6102ec0cb3d6ab11330140a43c608c5bd27a2))
++ __LogFailedJobsInterceptor:__ Insert nulls when no exception information
+ ([3f62908](https://github.com/coldbox-modules/cbq/commit/3f629084a4dc211180a862042a41a636d519d5e7))
+
+### other
+
++ __\*:__ Fix DB provider orphan reservation locking
+ ([ae6b23d](https://github.com/coldbox-modules/cbq/commit/ae6b23dc94531d1c24b41fce2debac229b2cd499))
++ __\*:__ v6.0.0-beta.5
+ ([ce43ca1](https://github.com/coldbox-modules/cbq/commit/ce43ca169bcc7b913add938a1bd4d65f84e81547))
++ __\*:__ Fix DB max attempts failure logging
+ ([7ca5f8d](https://github.com/coldbox-modules/cbq/commit/7ca5f8d8b2f5cb384b5da9f03ee949cfd080775c))
++ __\*:__ v6.0.0-beta.4
+ ([43fc2b5](https://github.com/coldbox-modules/cbq/commit/43fc2b53976a823f5e06748dd3c7b24c864cedd2))
++ __\*:__ chore: include test model fixtures in cfformat script ([8e98a09](https://github.com/coldbox-modules/cbq/commit/8e98a09eb1b577c35ce35699def17b0470821410))
++ __\*:__ Apply cfformat changes
+ ([7046e69](https://github.com/coldbox-modules/cbq/commit/7046e6984acf749a59cf47003b03cff21033737c))
++ __\*:__ test: use real subclass fixture to test releaseJob-throws path ([bef5b30](https://github.com/coldbox-modules/cbq/commit/bef5b30108ccb62395b42d3a58eb6425dee5fa09))
++ __\*:__ test: assert markJobFailed called (not DB row) when releaseJob throws ([f639c98](https://github.com/coldbox-modules/cbq/commit/f639c98a3e5190952feceffbca2c6e04fe307776))
++ __\*:__ refactor: extract processLockedRecord for testability and add max-attempts integration tests ([b241236](https://github.com/coldbox-modules/cbq/commit/b2412363cc708cb699e35ae190e7f93da3e106a1))
++ __\*:__ fix: configure mysql8 auth plugin in workflow step
+ ([d0f6627](https://github.com/coldbox-modules/cbq/commit/d0f662711b13c4f3429656cfc96a3e4d2f8c955e))
++ __\*:__ fix: set mysql8 test user auth plugin via init script
+ ([76e4553](https://github.com/coldbox-modules/cbq/commit/76e455398aaaf86d32d858ef487630be31eeb07b))
++ __\*:__ fix: remove invalid mysql docker flag in workflow services
+ ([03a33c8](https://github.com/coldbox-modules/cbq/commit/03a33c8fa678478d9e18767b7d731031a18da2ed))
++ __\*:__ chore: upgrade CI to MySQL 8 and re-enable skip locked
+ ([0e7e077](https://github.com/coldbox-modules/cbq/commit/0e7e0777885f1320d069a0da2b4ada4b90289b1c))
++ __\*:__ fix: remove skip locked from DB timeout watcher query
+ ([ce249d2](https://github.com/coldbox-modules/cbq/commit/ce249d2303779aa12e0041e36b179ea89dcc862b))
++ __\*:__ fix: set job attempt count in ColdBoxAsyncProvider and tighten tryToLockRecords guard ([c5d465d](https://github.com/coldbox-modules/cbq/commit/c5d465d7fa27c2886250279ea5e3a7b6be93e611))
++ __\*:__ fix: use availableDate instead of reservedDate for timeout watcher ([2a28ef8](https://github.com/coldbox-modules/cbq/commit/2a28ef8b894e2da66bd09230ff8eaea882015cb1))
++ __\*:__ Do not change `failedJobIds` except for incrementing failed jobs
+ ([9ee8593](https://github.com/coldbox-modules/cbq/commit/9ee859391c139872d7e8da81de686a92c5c05e04))
++ __\*:__ Apply cfformat changes
+ ([5772b0a](https://github.com/coldbox-modules/cbq/commit/5772b0a72313203831e1cfa6206ab281deeedcf8))
++ __\*:__ breaking: require successfulJobs and add batch count coverage
+ ([123e95d](https://github.com/coldbox-modules/cbq/commit/123e95d0f75e13f823692b36687dba0afec32ca9))
++ __\*:__ test: load lib jars in test app and require time UUID generator
+ ([32e619d](https://github.com/coldbox-modules/cbq/commit/32e619d27fd3599a28c21fa0092539023692efc5))
++ __\*:__ fix: make batch name optional and nullable
+ ([eafde20](https://github.com/coldbox-modules/cbq/commit/eafde200d70a76cc762ad45bc5830109bdac82d2))
++ __\*:__ fix: complete batches correctly when jobs end in failure
+ ([48cf9b3](https://github.com/coldbox-modules/cbq/commit/48cf9b36e266aa1d9eb0969144751a041f6edfa5))
++ __\*:__ Apply cfformat changes
+ ([f645060](https://github.com/coldbox-modules/cbq/commit/f6450602d6024ed23fcea30629dd5e7c5f9bdb5c))
++ __\*:__ fix: configure mysql8 auth plugin in workflow step
+ ([afe2e04](https://github.com/coldbox-modules/cbq/commit/afe2e048e9f155fd432fdd74cf425a9c6893479a))
++ __\*:__ fix: set mysql8 test user auth plugin via init script
+ ([2320e5d](https://github.com/coldbox-modules/cbq/commit/2320e5d24f6ef5885aadecb1f02af1338847cad9))
++ __\*:__ fix: remove invalid mysql docker flag in workflow services
+ ([202c5d3](https://github.com/coldbox-modules/cbq/commit/202c5d3afbcca091894d59a5e61cc77805357013))
++ __\*:__ chore: upgrade CI to MySQL 8 and re-enable skip locked
+ ([8574754](https://github.com/coldbox-modules/cbq/commit/8574754aa681491b7bd8e1f80d080e903dbd85b1))
++ __\*:__ fix: remove skip locked from DB timeout watcher query
+ ([7ea7222](https://github.com/coldbox-modules/cbq/commit/7ea7222b1742570c8e7f4d6bd0a4ddfeb7fd1de7))
++ __\*:__ 6.0.0-beta.3
+ ([aa8bce1](https://github.com/coldbox-modules/cbq/commit/aa8bce1c0d05eebb582887b43cd03ea1be8699d9))
++ __\*:__ fix: set job attempt count in ColdBoxAsyncProvider and tighten tryToLockRecords guard ([4d012f6](https://github.com/coldbox-modules/cbq/commit/4d012f685d65c3a88cde14b5825b7c158a54bd85))
++ __\*:__ v6.0.0-beta.2
+ ([3f93107](https://github.com/coldbox-modules/cbq/commit/3f931078da01dcc3573b4f850be24ed752f98e66))
++ __\*:__ fix: use availableDate instead of reservedDate for timeout watcher ([c7a32e2](https://github.com/coldbox-modules/cbq/commit/c7a32e293da1f38de09c069d85a44cfa7a5e7e00))
++ __\*:__ v6.0.0-beta.1
+ ([3b36a73](https://github.com/coldbox-modules/cbq/commit/3b36a7378bb412914ee4748271e2d5e07dad1092))
++ __\*:__ Do not change `failedJobIds` except for incrementing failed jobs
+ ([9389595](https://github.com/coldbox-modules/cbq/commit/9389595beaba32ab2257634a61b500d21a0ae358))
++ __\*:__ Apply cfformat changes
+ ([53655da](https://github.com/coldbox-modules/cbq/commit/53655dadb21bf4836d4f66c479670c7f8bbce14a))
++ __\*:__ breaking: require successfulJobs and add batch count coverage
+ ([6245c23](https://github.com/coldbox-modules/cbq/commit/6245c2342cd7670c4d7203f3135a5398b9fc2a08))
++ __\*:__ test: load lib jars in test app and require time UUID generator
+ ([b1e529b](https://github.com/coldbox-modules/cbq/commit/b1e529bacff771394040eecc637c8e8c1a1137cf))
++ __\*:__ fix: make batch name optional and nullable
+ ([1f13780](https://github.com/coldbox-modules/cbq/commit/1f1378001ec363325fd53108ff247b84ef954eb6))
++ __\*:__ fix: complete batches correctly when jobs end in failure
+ ([eb25679](https://github.com/coldbox-modules/cbq/commit/eb25679f9c78a9971a7e00531e74773d424483e6))
++ __\*:__ test: reproduce missing batch finally dispatch on terminal failure
+ ([16149b6](https://github.com/coldbox-modules/cbq/commit/16149b614303aee4f205338b0c3fb010170d2054))
++ __\*:__ fix: use CF_SQL_LONGVARCHAR for LONGTEXT columns in LogFailedJobsInterceptor ([45d1a05](https://github.com/coldbox-modules/cbq/commit/45d1a05b77ba68baf73da813cc73b889bb1bd9f7))
++ __\*:__ fix: address Copilot review feedback on PR #26 ([ae64039](https://github.com/coldbox-modules/cbq/commit/ae640390186f838599662d3b94adc36119158410))
++ __\*:__ chore: include test model fixtures in cfformat script ([1d48bb7](https://github.com/coldbox-modules/cbq/commit/1d48bb785d328e99ddd49239e0c5a8f29514fce1))
++ __\*:__ Apply cfformat changes
+ ([8efbcfe](https://github.com/coldbox-modules/cbq/commit/8efbcfea0e8aa27581d97c3a1d4861b3c7df45bd))
++ __\*:__ test: use real subclass fixture to test releaseJob-throws path ([e689770](https://github.com/coldbox-modules/cbq/commit/e689770277d66035e8ab14a0d5ea3d0c396bc872))
++ __\*:__ test: assert markJobFailed called (not DB row) when releaseJob throws ([6e21c1e](https://github.com/coldbox-modules/cbq/commit/6e21c1eaa923bc5ea155dd5b3e311e675ac6fe8b))
++ __\*:__ fix: guard releaseJob-failure log call so markJobFailed always runs ([75e8ba7](https://github.com/coldbox-modules/cbq/commit/75e8ba78b02f2c75f373ad0402456657f99ad6bf))
++ __\*:__ refactor: extract processLockedRecord for testability and add max-attempts integration tests ([5b6621c](https://github.com/coldbox-modules/cbq/commit/5b6621c615005b080af28f209168b5321d29ab17))
++ __\*:__ fix: harden marshalJob exception handler against swallowed failures ([5b90fe2](https://github.com/coldbox-modules/cbq/commit/5b90fe2487b566d53573014a9b972fac8e6a1ef2))
++ __\*:__ fix: guard against runaway retries in DBProvider pickup loop ([4eaa820](https://github.com/coldbox-modules/cbq/commit/4eaa820de5361918dcafd620dd146e2a59f7b560))
++ __\*:__ fix: correct excpetion typo in SyncProvider onFailure invocation ([6e62358](https://github.com/coldbox-modules/cbq/commit/6e62358cccf944276c4b088b4ef1a5363b774edc))
++ __\*:__ fix: protect finally job dispatch from then/catch job failures ([fc8a450](https://github.com/coldbox-modules/cbq/commit/fc8a450f7f67c02369f7ef6ced02a2f7a318be01))
++ __\*:__ fix: configure mysql8 auth plugin in workflow step
+ ([ef5cb87](https://github.com/coldbox-modules/cbq/commit/ef5cb8784c9c806f0011310562bb58beb3685e3b))
++ __\*:__ fix: set mysql8 test user auth plugin via init script
+ ([b15e82a](https://github.com/coldbox-modules/cbq/commit/b15e82aeb65c67c20ce32019fbb96a3a7b00b7cd))
++ __\*:__ fix: remove invalid mysql docker flag in workflow services
+ ([f0137f4](https://github.com/coldbox-modules/cbq/commit/f0137f4a210790936616b19f5610aae4ae98609b))
++ __\*:__ chore: upgrade CI to MySQL 8 and re-enable skip locked
+ ([2b6ccd8](https://github.com/coldbox-modules/cbq/commit/2b6ccd8ae7b9f35593e2705c67868d9cf9fabe4d))
++ __\*:__ fix: remove skip locked from DB timeout watcher query
+ ([c503359](https://github.com/coldbox-modules/cbq/commit/c503359c35f1cb51a3ad69dc4bccdec76b3f777e))
++ __\*:__ 6.0.0-beta.3
+ ([6c0fc90](https://github.com/coldbox-modules/cbq/commit/6c0fc902bc95978b055b3fee13a2aea10fe79658))
++ __\*:__ fix: set job attempt count in ColdBoxAsyncProvider and tighten tryToLockRecords guard ([925b8bb](https://github.com/coldbox-modules/cbq/commit/925b8bb81e51e52969922336c1bf298e9ab1e79e))
++ __\*:__ test: verify timeout watcher respects job-specific timeout over pool timeout ([5b477d5](https://github.com/coldbox-modules/cbq/commit/5b477d50dd8bdee44c536665f27ae4c7f9488ce6))
++ __\*:__ v6.0.0-beta.2
+ ([22766cb](https://github.com/coldbox-modules/cbq/commit/22766cb73dec6e9c79e67d4f11d4132785a6f8d0))
++ __\*:__ chore: add interceptors to cfformat scripts ([3c390ac](https://github.com/coldbox-modules/cbq/commit/3c390ac58f5d27dbba1e9beab85933b44a5f03d4))
++ __\*:__ fix: use availableDate instead of reservedDate for timeout watcher ([c302ee0](https://github.com/coldbox-modules/cbq/commit/c302ee08cea608cc130d98473b2d11cf82343813))
++ __\*:__ fix: handle complex stackTrace objects in LogFailedJobsInterceptor ([e665fa9](https://github.com/coldbox-modules/cbq/commit/e665fa9102bdf1236d299fab8ec9e571e51d467b))
++ __\*:__ v6.0.0-beta.1
+ ([cef8a75](https://github.com/coldbox-modules/cbq/commit/cef8a75851c85391cb2689af2cb90ca4be9e6732))
++ __\*:__ Do not change `failedJobIds` except for incrementing failed jobs
+ ([ac8eaf0](https://github.com/coldbox-modules/cbq/commit/ac8eaf00bf0b7a260a13acf5e5a7bc90c1de6e4b))
++ __\*:__ Apply cfformat changes
+ ([333b7c9](https://github.com/coldbox-modules/cbq/commit/333b7c9c48351064648a69803058925ae00c9863))
++ __\*:__ breaking: require successfulJobs and add batch count coverage
+ ([bd3a6d4](https://github.com/coldbox-modules/cbq/commit/bd3a6d4072d2327b8b0eabcf24fd9bf1ed014b80))
++ __\*:__ test: load lib jars in test app and require time UUID generator
+ ([cd5caff](https://github.com/coldbox-modules/cbq/commit/cd5caff187c75914f775638d5eee65edc8ecd16c))
++ __\*:__ fix: make batch name optional and nullable
+ ([2402bbc](https://github.com/coldbox-modules/cbq/commit/2402bbc6a2bc6a7ca7a4fefa0acc5278905ec1d1))
++ __\*:__ fix: complete batches correctly when jobs end in failure
+ ([278aef1](https://github.com/coldbox-modules/cbq/commit/278aef1428932324e2f16063a858f2e060987820))
++ __\*:__ test: reproduce missing batch finally dispatch on terminal failure
+ ([8981547](https://github.com/coldbox-modules/cbq/commit/8981547be1c8ce14ab8feffbbf2a3958a03c9bf7))
+
+
+# v5.0.8
 ## 20 Apr 2026 — 21:58:55 UTC
 
 ### fix
