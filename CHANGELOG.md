@@ -1,3 +1,11 @@
+# v6.0.0
+## 20 Jul 2026 — 19:38:26 UTC
+
+### BREAKING
+
++ __batches:__ require successfulJobs for batch counts ([6c8d8c4](https://github.com/coldbox-modules/cbq/commit/6c8d8c468770c2e5b927c3d5ae559920594149b1))
+
+
 # v5.0.9
 ## 20 Jul 2026 — 19:31:20 UTC
 
