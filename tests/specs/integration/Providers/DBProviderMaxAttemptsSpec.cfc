@@ -389,7 +389,7 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 					.from( "cbq_jobs" )
 					.where( "id", jobId )
 					.first();
-				if ( ( row.reservedBy ?: "" ) == "" || !isNull( row.failedDate ) ) {
+				if ( ( row.reservedBy ?: "" ) == "" || ( row.failedDate ?: "" ) != "" ) {
 					settled = true;
 					break;
 				}
@@ -401,7 +401,7 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 				expect( row.failedDate ?: "" ).toBe( "", "The configured budget must allow another execution" );
 				expect( deserializeJSON( row.payload ).currentAttempt ).toBe( attempt );
 			} else {
-				expect( row.failedDate ).notToBeNull( "The third execution must exhaust the budget" );
+				expect( row.failedDate ?: "" ).notToBe( "", "The third execution must exhaust the budget" );
 			}
 		}
 	}
