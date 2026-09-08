@@ -213,6 +213,34 @@ component accessors="true" extends="AbstractQueueProvider" {
 		numeric delay = 0,
 		numeric attempts = 0
 	) {
+		var jobPayload = buildJobPayload( argumentCollection = arguments );
+		newQuery().table( variables.tableName ).insert( jobPayload, variables.defaultQueryOptions );
+		return this;
+	}
+
+	/** Each job remains a separate row; the caller owns transaction boundaries. */
+	public any function pushMany( required array entries ) {
+		var rows = [];
+		for ( var entry in arguments.entries ) {
+			rows.append( buildJobPayload( argumentCollection = entry ) );
+			// Five bindings per row; stay below SQL Server parameter/row limits.
+			if ( rows.len() == 100 ) {
+				newQuery().table( variables.tableName ).insert( rows, variables.defaultQueryOptions );
+				rows = [];
+			}
+		}
+		if ( rows.len() ) {
+			newQuery().table( variables.tableName ).insert( rows, variables.defaultQueryOptions );
+		}
+		return this;
+	}
+
+	private struct function buildJobPayload(
+		required string queueName,
+		required AbstractJob job,
+		numeric delay = 0,
+		numeric attempts = 0
+	) {
 		var jobPayload = {
 			"queue" : {
 				"value" : arguments.queueName,
@@ -233,9 +261,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 		if ( variables.log.canDebug() ) {
 			variables.log.debug( "Pushing job to #arguments.queueName# queue.", jobPayload );
 		}
-
-		newQuery().table( variables.tableName ).insert( jobPayload, variables.defaultQueryOptions );
-		return this;
+		return jobPayload;
 	}
 
 	public function function startWorker( required WorkerPool pool ) {

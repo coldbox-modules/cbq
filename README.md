@@ -255,3 +255,24 @@ To dispatch the chain, you must call `dispatch` on the returned Job.
 | Name | Type | Required | Default | Description |
 | ----- | ------ | -------- | ------- | ------- |
 | chain | Job[] | false | `[]` | An array of Job instances to chain after this one. |
+
+## Opt-in database enqueue batches
+
+`Dispatcher@cbq.bulkDispatch` accepts `batchSize` from 1 to 100. The default is 1 and preserves the existing order: announce `onCBQJobAdded`, reset the job's attempt, then push that job before announcing the next.
+
+```cfc
+transaction {
+    getInstance( "Dispatcher@cbq" ).bulkDispatch(
+        jobs = jobs,
+        connectionName = "db",
+        queueName = "mail",
+        batchSize = 100
+    );
+}
+```
+
+With a larger batch size, each job is still announced separately and becomes its own queue row, with its own payload and lifecycle. Events for one chunk run before that chunk is persisted. Choose the default if a job-added interceptor needs to read earlier jobs from the same chunk. An explicit queue overrides job queues as before; otherwise each job keeps its effective queue. As with existing `bulkDispatch`, this does not use each job's backoff as an initial delay.
+
+The DB provider writes at most 100 rows (500 bindings) per insert. Other providers continue through their ordinary `push` implementation unless they implement `pushMany(entries)`. Entries contain the ordinary `push` arguments: `queueName`, `job`, and optionally `delay` and `attempts`. `DBProvider.pushMany` also bounds direct calls to 100 rows per insert. It uses the configured table, query options and datasource.
+
+The caller owns transaction boundaries. Wrap the dispatch with related database changes when all chunks must commit or roll back together. Without a surrounding transaction, a later event, serialization or insert failure can leave earlier chunks persisted.

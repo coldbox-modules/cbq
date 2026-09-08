@@ -35,11 +35,16 @@ component singleton accessors="true" {
 	public Dispatcher function bulkDispatch(
 		required array jobs,
 		string connectionName,
-		string queueName
+		string queueName,
+		numeric batchSize = 1
 	) {
+		if ( !isValid( "integer", arguments.batchSize ) || arguments.batchSize < 1 || arguments.batchSize > 100 ) {
+			throw( type = "cbq.InvalidDispatchBatchSize", message = "batchSize must be an integer between 1 and 100." );
+		}
 		param arguments.connectionName = variables.config.getDefaultConnectionName();
 		var connection = variables.config.getConnection( connectionName );
 
+		var pending = [];
 		for ( var job in arguments.jobs ) {
 			variables.interceptorService.announce(
 				"onCBQJobAdded",
@@ -50,11 +55,24 @@ component singleton accessors="true" {
 			);
 
 			job.setCurrentAttempt( 0 );
-			connection.push(
-				queueName = arguments.queueName ?: job.getQueue() ?: connection.getDefaultQueue(),
-				job = job,
-				attempts = 0
-			);
+			var entry = {
+				"queueName" : arguments.queueName ?: job.getQueue() ?: connection.getDefaultQueue(),
+				"job" : job,
+				"attempts" : 0
+			};
+			if ( arguments.batchSize == 1 ) {
+				connection.push( argumentCollection = entry );
+			} else {
+				pending.append( entry );
+				if ( pending.len() == arguments.batchSize ) {
+					connection.pushMany( pending );
+					pending = [];
+				}
+			}
+		}
+
+		if ( pending.len() ) {
+			connection.pushMany( pending );
 		}
 
 		return this;
