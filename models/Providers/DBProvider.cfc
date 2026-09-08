@@ -400,6 +400,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 					"availableDate" : getCurrentUnixTimestamp( getBackoffForJob( arguments.job, arguments.pool ) ),
 					"reservedDate" : {
 						"value" : "",
+						"cfsqltype" : "cf_sql_bigint",
 						"null" : true,
 						"nulls" : true
 					},
@@ -414,7 +415,8 @@ component accessors="true" extends="AbstractQueueProvider" {
 			log.debug( "Fetching up to #capacity# potentially open record(s) [Worker Pool #pool.getUniqueId()#]." );
 		}
 
-		var ids = newQuery()
+		var builder = newQuery();
+		var ids = builder
 			.from( variables.tableName )
 			.limit( arguments.capacity )
 			.lockForUpdate( skipLocked = true )
@@ -454,7 +456,10 @@ component accessors="true" extends="AbstractQueueProvider" {
 						);
 				} );
 			} )
-			.orderByRaw( "CASE WHEN reservedBy = ? THEN 1 ELSE 2 END ASC", [ arguments.pool.getUniqueId() ] )
+			.orderByRaw(
+				"CASE WHEN #builder.getGrammar().wrapValue( "reservedBy" )# = ? THEN 1 ELSE 2 END ASC",
+				[ arguments.pool.getUniqueId() ]
+			)
 			.when( worksMultipleQueues( arguments.pool ), ( q ) => {
 				q.orderByRaw( generateQueuePriorityOrderBy( pool ) )
 			} )
@@ -514,6 +519,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 					"reservedBy" : arguments.pool.getUniqueId(),
 					"reservedDate" : {
 						"value" : "",
+						"cfsqltype" : "cf_sql_bigint",
 						"null" : true,
 						"nulls" : true
 					}
