@@ -109,7 +109,7 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 					.first();
 
 				prepareMock( variables.provider );
-				variables.provider.$( "incrementJobAttempts" );
+				variables.provider.$( "incrementJobAttempts", true );
 				variables.provider.$( "marshalJob" );
 
 				variables.provider.processLockedRecord( record, variables.pool );
@@ -241,7 +241,7 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 					.first();
 
 				prepareMock( variables.provider );
-				variables.provider.$( "incrementJobAttempts" );
+				variables.provider.$( "incrementJobAttempts", true );
 				variables.provider.$( "marshalJob" );
 
 				variables.provider.processLockedRecord( record, variables.pool );
