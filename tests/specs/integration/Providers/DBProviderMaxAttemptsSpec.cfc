@@ -48,6 +48,49 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 				assertExecutionAttempts( "ReleaseTestJob" );
 			} );
 
+			for ( var counterBoundary in [ 255, 32767, 2147483647 ] ) {
+				it(
+					title = "reserves an unlimited job beyond execution count " & counterBoundary,
+					data = { "boundary" : counterBoundary },
+					body = function( data ) {
+						var job = getWireBox().getInstance( "SendWelcomeEmailJob" ).setMaxAttempts( 0 );
+						variables.provider.push( "default", job );
+						variables.provider
+							.newQuery()
+							.table( "cbq_jobs" )
+							.update( {
+								"attempts" : data.boundary,
+								"reservedBy" : variables.pool.getUniqueId(),
+								"reservedDate" : {
+									"value" : "",
+									"null" : true,
+									"nulls" : true,
+									"cfsqltype" : "cf_sql_bigint"
+								}
+							} );
+						var record = variables.provider
+							.newQuery()
+							.from( "cbq_jobs" )
+							.first();
+						// Keep the real deserialization/reservation update; stop only
+						// the asynchronous dispatch after the persisted increment.
+						prepareMock( variables.provider ).$( "marshalJob" );
+						variables.provider.processLockedRecord( record, variables.pool );
+						var row = variables.provider
+							.newQuery()
+							.from( "cbq_jobs" )
+							.where( "id", record.id )
+							.first();
+						expect( row.attempts ).toBe( data.boundary + 1 );
+						expect( row.reservedBy ).toBe( variables.pool.getUniqueId() );
+						expect( row.reservedDate ?: "" ).notToBe( "" );
+						expect( row.completedDate ?: "" ).toBe( "" );
+						expect( row.failedDate ?: "" ).toBe( "" );
+						expect( variables.provider.$once( "marshalJob" ) ).toBeTrue();
+					}
+				);
+			}
+
 			it( "forceFailJob sets failedDate and preserves the reservation", function() {
 				var job = getWireBox().getInstance( "SendWelcomeEmailJob" ).setMaxAttempts( 3 );
 				variables.provider.push( "default", job );
