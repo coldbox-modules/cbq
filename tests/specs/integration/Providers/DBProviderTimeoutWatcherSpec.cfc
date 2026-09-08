@@ -145,13 +145,23 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 			.getInstance( "QueryBuilder@qb" )
 			.setGrammar( getWireBox().getInstance( arguments.grammar ) )
 			.pretend();
+		// Compile the provider's query without executing another database's SQL.
+		// qb's pretend mode does not return a result set for values().
+		prepareMock( builder ).$(
+			"values",
+			callback = function( column, options ) {
+				builder.select( arguments.column );
+				return [];
+			}
+		);
 		prepareMock( variables.provider ).$( "newQuery", builder );
 		variables.provider.fetchPotentiallyOpenRecords( capacity = 10, pool = variables.pool );
 
 		var sql = builder.toSQL();
 		expect( sql ).toInclude( "CASE WHEN #arguments.quotedColumn# = ? THEN 1 ELSE 2 END ASC" );
 		expect( sql ).notToInclude( variables.pool.getUniqueId() );
-		expect( serializeJSON( builder.getBindings() ) ).toInclude( variables.pool.getUniqueId() );
+		var bindings = builder.getBindings().map( ( binding ) => isStruct( binding ) ? binding.value : binding );
+		expect( bindings ).toInclude( variables.pool.getUniqueId() );
 	}
 
 	private any function makeWorkerPool( required any provider ) {
