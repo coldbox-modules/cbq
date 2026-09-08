@@ -206,14 +206,20 @@ component accessors="true" extends="AbstractQueueProvider" {
 		numeric attempts = 0
 	) {
 		var jobPayload = {
-			"queue" : arguments.queueName,
+			"queue" : {
+				"value" : arguments.queueName,
+				"cfsqltype" : "cf_sql_varchar"
+			},
 			"attempts" : {
 				"value" : arguments.attempts,
 				"sqltype" : "bigint"
 			},
 			"availableDate" : getCurrentUnixTimestamp( arguments.delay ),
 			"createdDate" : getCurrentUnixTimestamp(),
-			"payload" : serializeJSON( arguments.job.getMemento() )
+			"payload" : {
+				"value" : serializeJSON( arguments.job.getMemento() ),
+				"cfsqltype" : "cf_sql_varchar"
+			}
 		};
 
 		if ( variables.log.canDebug() ) {
