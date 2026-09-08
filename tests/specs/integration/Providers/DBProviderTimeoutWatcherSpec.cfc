@@ -148,7 +148,7 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 		// Compile the provider's query without executing another database's SQL.
 		// qb's pretend mode does not return a result set for values().
 		prepareMock( builder ).$(
-			"values",
+			method = "values",
 			callback = function( column, options ) {
 				builder.select( arguments.column );
 				return [];
