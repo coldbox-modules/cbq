@@ -22,7 +22,7 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 						for ( var row in rows ) {
 							var payload = deserializeJSON( row.payload );
 							var ordinal = payload.properties.ordinal;
-							expect( seen ).notToHaveKey( ordinal );
+							expect( structKeyExists( seen, ordinal ) ).toBeFalse();
 							seen[ ordinal ] = true;
 							expect( payload.properties.text ).toBe( entries[ ordinal ].job.getProperties().text );
 							expect( row.attempts ).toBe( 2147483648 );
