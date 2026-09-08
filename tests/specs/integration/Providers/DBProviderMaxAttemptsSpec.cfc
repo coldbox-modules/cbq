@@ -40,6 +40,14 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 					.delete();
 			} );
 
+			it( "counts each failed execution once through the configured maximum", function() {
+				assertExecutionAttempts( "AlwaysErrorJob" );
+			} );
+
+			it( "counts each manual release once through the configured maximum", function() {
+				assertExecutionAttempts( "ReleaseTestJob" );
+			} );
+
 			it( "forceFailJob sets failedDate and preserves the reservation", function() {
 				var job = getWireBox().getInstance( "SendWelcomeEmailJob" ).setMaxAttempts( 3 );
 				variables.provider.push( "default", job );
@@ -342,6 +350,60 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 				);
 			} );
 		} );
+	}
+
+	private void function assertExecutionAttempts( required string mapping ) {
+		var job = getWireBox().getInstance( arguments.mapping ).setMaxAttempts( 3 );
+		variables.provider.push( "default", job );
+		var jobId = variables.provider
+			.newQuery()
+			.from( "cbq_jobs" )
+			.value( "id" );
+		for ( var attempt = 1; attempt <= 3; attempt++ ) {
+			// Drive successive reservations directly, without a timer/backoff wait.
+			// processLockedRecord still executes the actual job and lifecycle future.
+			variables.provider
+				.newQuery()
+				.table( "cbq_jobs" )
+				.where( "id", jobId )
+				.update( {
+					"reservedBy" : variables.pool.getUniqueId(),
+					"reservedDate" : {
+						"value" : "",
+						"null" : true,
+						"nulls" : true,
+						"cfsqltype" : "cf_sql_bigint"
+					}
+				} );
+			var record = variables.provider
+				.newQuery()
+				.from( "cbq_jobs" )
+				.where( "id", jobId )
+				.first();
+			variables.provider.processLockedRecord( record, variables.pool );
+			var row = {};
+			var settled = false;
+			for ( var poll = 1; poll <= 100; poll++ ) {
+				row = variables.provider
+					.newQuery()
+					.from( "cbq_jobs" )
+					.where( "id", jobId )
+					.first();
+				if ( ( row.reservedBy ?: "" ) == "" || !isNull( row.failedDate ) ) {
+					settled = true;
+					break;
+				}
+				sleep( 50 );
+			}
+			expect( settled ).toBeTrue( "The execution must release or fail before checking its count" );
+			expect( row.attempts ).toBe( attempt, "Releasing a job must not consume another execution attempt" );
+			if ( attempt < 3 ) {
+				expect( row.failedDate ?: "" ).toBe( "", "The configured budget must allow another execution" );
+				expect( deserializeJSON( row.payload ).currentAttempt ).toBe( attempt );
+			} else {
+				expect( row.failedDate ).notToBeNull( "The third execution must exhaust the budget" );
+			}
+		}
 	}
 
 	private numeric function reserveJobForPool() {
