@@ -10,13 +10,12 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 					target = variables.provider,
 					mapping = getWireBox().getBinder().getMapping( "DBProvider@cbq" )
 				);
-				for (
-					var method in [
-						"afterJobRun",
-						"afterJobFailed",
-						"processLockedRecord"
-					]
-				) {
+				var methods = [
+					"afterJobRun",
+					"afterJobFailed",
+					"processLockedRecord"
+				];
+				for ( var method in methods ) {
 					makePublic( variables.provider, method );
 				}
 				variables.pool = getInstance( "WorkerPool@cbq" ).setName( "Ownership-#createUUID()#" );
@@ -32,12 +31,13 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 					.delete();
 			} );
 
-			[
+			var operations = [
 				"complete",
 				"release",
 				"fail",
 				"force-fail"
-			].each( function( operation ) {
+			];
+			operations.each( function( operation ) {
 				it( "ignores stale #operation# after the same pool starts a newer attempt", function() {
 					assertCallback( operation, "running" );
 				} );
