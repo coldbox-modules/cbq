@@ -48,18 +48,21 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 				assertExecutionAttempts( "ReleaseTestJob" );
 			} );
 
-			for ( var counterBoundary in [ 255, 32767, 2147483647 ] ) {
+			for ( var counterBoundary in [ 255, 32767, 2147483647, 2147483648 ] ) {
 				it(
 					title = "reserves an unlimited job beyond execution count " & counterBoundary,
 					data = { "boundary" : counterBoundary },
 					body = function( data ) {
 						var job = getWireBox().getInstance( "SendWelcomeEmailJob" ).setMaxAttempts( 0 );
-						variables.provider.push( "default", job );
+						variables.provider.push(
+							queueName = "default",
+							job = job,
+							attempts = data.boundary
+						);
 						variables.provider
 							.newQuery()
 							.table( "cbq_jobs" )
 							.update( {
-								"attempts" : data.boundary,
 								"reservedBy" : variables.pool.getUniqueId(),
 								"reservedDate" : {
 									"value" : "",
@@ -87,6 +90,16 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 						expect( row.completedDate ?: "" ).toBe( "" );
 						expect( row.failedDate ?: "" ).toBe( "" );
 						expect( variables.provider.$once( "marshalJob" ) ).toBeTrue();
+						job.setId( row.id ).setCurrentAttempt( row.attempts );
+						variables.provider.releaseJob( job, variables.pool );
+						var released = variables.provider
+							.newQuery()
+							.from( "cbq_jobs" )
+							.where( "id", row.id )
+							.first();
+						expect( released.attempts ).toBe( job.getCurrentAttempt() );
+						expect( released.attempts ).toBeGT( data.boundary );
+						expect( released.reservedBy ?: "" ).toBe( "" );
 					}
 				);
 			}
