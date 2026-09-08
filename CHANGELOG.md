@@ -1,3 +1,11 @@
+# v6.0.1
+## 08 Sep 2026 — 04:17:15 UTC
+
+### fix
+
++ __DBProvder:__ Fix reservation ordering on Postgres ([019774b](https://github.com/coldbox-modules/cbq/commit/019774b4bbe3eb1267c6a84226e61a135eb40f06))
+
+
 # v6.0.0
 ## 20 Jul 2026 — 19:38:26 UTC
 
