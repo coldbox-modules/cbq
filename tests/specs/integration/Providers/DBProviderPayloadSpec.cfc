@@ -44,7 +44,7 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 					.from( "cbq_jobs" )
 					.where( "queue", variables.queue )
 					.first();
-				expect( row.queue ).toBe( variables.queue );
+				expect( compare( row.queue, variables.queue ) ).toBe( 0 );
 				expect( row.attempts ).toBe( 2147483648 );
 				expect( row.createdDate >= before && row.createdDate <= after ).toBeTrue();
 				expect( row.availableDate >= before + 17 && row.availableDate <= after + 17 ).toBeTrue();
@@ -62,7 +62,7 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 					.from( "cbq_jobs" )
 					.where( "queue", variables.queue )
 					.first();
-				expect( row.queue ).toBe( variables.queue );
+				expect( compare( row.queue, variables.queue ) ).toBe( 0 );
 			} );
 		} );
 	}
