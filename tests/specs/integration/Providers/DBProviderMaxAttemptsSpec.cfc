@@ -281,7 +281,9 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 					.update( {
 						"reservedBy" : failingPool.getUniqueId(),
 						"reservedDate" : now,
-						"availableDate" : now + 60
+						"availableDate" : now + 60,
+						// marshalJob below begins execution one; mirror its persisted reservation.
+						"attempts" : 1
 					} );
 
 				var jobId = failingProvider
