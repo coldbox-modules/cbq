@@ -62,6 +62,20 @@ Future planned providers include:
 Each of the providers takes different configuration when creating a connection.
 Refer to the specific provider documentation for details.
 
+### Database polling
+
+`DBProvider@cbq` polls once every five seconds by default. Each poll fetches only as many jobs as the worker pool currently has available slots. For short jobs, polling can therefore determine backlog drain time even when transport is fast.
+
+Set `pollIntervalMilliseconds` in the connection properties to configure the delay between completed polling passes. It must be a positive integer; the default is `5000`. This configures each native database watcher on that connection and takes effect when workers are registered. Worker quantity, job timeout, retry backoff and ownership checks are unchanged.
+
+```cfc
+newConnection( "mail" )
+    .setProvider( "DBProvider@cbq" )
+    .setProperties( { "pollIntervalMilliseconds": 250 } );
+```
+
+A shorter interval also increases polling while the queue is idle. Measure database load, worker capacity, transport limits and queue age before choosing it. This setting does not increase the worker pool's concurrency or guarantee a delivery time.
+
 ## Installation and Setup
 
 To install cbq, install it from ForgeBox:

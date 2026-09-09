@@ -15,6 +15,14 @@ component accessors="true" extends="AbstractQueueProvider" {
 	}
 
 	public DBProvider function setProperties( required struct properties ) {
+		var pollInterval = arguments.properties.keyExists( "pollIntervalMilliseconds" ) ? arguments.properties.pollIntervalMilliseconds : 5000;
+		if ( !isSimpleValue( pollInterval ) || !isValid( "integer", pollInterval ) || pollInterval <= 0 ) {
+			throw(
+				type = "cbq.DBProvider.InvalidPollInterval",
+				message = "pollIntervalMilliseconds must be a positive integer."
+			);
+		}
+		variables.pollIntervalMilliseconds = pollInterval;
 		variables.properties = arguments.properties;
 		variables.tableName = variables.properties.keyExists( "tableName" ) ? variables.properties.tableName : "cbq_jobs";
 		variables.defaultQueryOptions = variables.properties.keyExists( "queryOptions" ) ? variables.properties.queryOptions : {};
@@ -63,7 +71,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 
 				return lockedRecords.len();
 			} )
-			.spacedDelay( 5, "seconds" )
+			.spacedDelay( variables.pollIntervalMilliseconds, "milliseconds" )
 			.before( function() {
 				application.cbController.getModuleService().loadMappings();
 				if ( variables.log.canDebug() ) {
