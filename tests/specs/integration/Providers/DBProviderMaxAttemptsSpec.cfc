@@ -68,7 +68,7 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 									"value" : "",
 									"null" : true,
 									"nulls" : true,
-									"cfsqltype" : "cf_sql_bigint"
+									"sqltype" : "bigint"
 								}
 							} );
 						var record = variables.provider

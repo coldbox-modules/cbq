@@ -209,7 +209,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 			"queue" : arguments.queueName,
 			"attempts" : {
 				"value" : arguments.attempts,
-				"cfsqltype" : "cf_sql_bigint"
+				"sqltype" : "bigint"
 			},
 			"availableDate" : getCurrentUnixTimestamp( arguments.delay ),
 			"createdDate" : getCurrentUnixTimestamp(),
@@ -325,7 +325,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 				"attempts",
 				{
 					"value" : arguments.job.getCurrentAttempt(),
-					"cfsqltype" : "cf_sql_bigint"
+					"sqltype" : "bigint"
 				}
 			)
 			.update(
@@ -334,7 +334,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 					"availableDate" : getCurrentUnixTimestamp( getTimeoutForJob( arguments.job, arguments.pool ) ),
 					"attempts" : {
 						"value" : arguments.job.getCurrentAttempt() + 1,
-						"cfsqltype" : "cf_sql_bigint"
+						"sqltype" : "bigint"
 					}
 				},
 				options = variables.defaultQueryOptions
@@ -402,7 +402,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 				"attempts",
 				{
 					"value" : context.keyExists( "attempt" ) ? context.attempt : arguments.job.getCurrentAttempt(),
-					"cfsqltype" : "cf_sql_bigint"
+					"sqltype" : "bigint"
 				}
 			);
 			if ( context.awaitingExecution ?: false ) {
@@ -439,7 +439,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 				"payload" : serializeJSON( job.getMemento() ),
 				"attempts" : {
 					"value" : arguments.job.getCurrentAttempt(),
-					"cfsqltype" : "cf_sql_bigint"
+					"sqltype" : "bigint"
 				},
 				"reservedBy" : {
 					"value" : "",
