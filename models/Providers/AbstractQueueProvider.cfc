@@ -68,8 +68,10 @@ component accessors="true" {
 		var config = deserializeJSON( arguments.payload );
 
 		if ( !variables.wirebox.containsInstance( config.mapping ) ) {
-			afterJobFailed( arguments.jobId );
-			throw( "Failed to find the [#config.mapping#] instance" );
+			throw(
+				type = "cbq.UnknownJobMapping",
+				message = "Failed to find the [#config.mapping#] instance. Route this queue to workers with that mapping."
+			);
 		}
 
 		var instance = variables.wirebox.getInstance( config.mapping );
