@@ -7,6 +7,19 @@
 Adobe 2018+ or Lucee 5+
 ColdBox 6+
 
+### Batch UUID library
+
+Batch IDs use the Java UUID Generator bundled in `cbq/lib`. Add that directory to your application's `Application.cfc` Java load paths before creating batches (adjust the path to your module installation):
+
+```cfc
+this.javaSettings = {
+    loadPaths : [ expandPath( "/modules/cbq/lib" ) ],
+    reloadOnChange : false
+};
+```
+
+If you already configure `this.javaSettings`, append this directory to its existing `loadPaths`. Restart the application after changing Java load paths. A `ClassNotFoundException` for `com.fasterxml.uuid.Generators` means this bundled library is missing from the application's classpath; changing the Java version alone does not add it. Use a Java version supported by your CFML engine.
+
 ## Definitions
 
 ### Queue Connection
@@ -61,6 +74,18 @@ Future planned providers include:
 
 Each of the providers takes different configuration when creating a connection.
 Refer to the specific provider documentation for details.
+
+### Database compatibility
+
+For MySQL, `DBProvider@cbq` requires **MySQL 8.0 or later**. Its reservation query uses `FOR UPDATE SKIP LOCKED`, which MySQL 5.7 does not support. See [MySQL locking reads](https://dev.mysql.com/doc/refman/8.0/en/innodb-locking-reads.html). cbq does not ship a MySQL 5.7 fallback grammar. Upgrade MySQL before enabling database workers; removing the lock clause changes concurrent worker behavior.
+
+### Workers with different job mappings
+
+Use separate queues and explicitly configure each worker pool's queues when workers have different job components. An unknown mapping is logged with the job ID and worker pool. Database workers release that reservation without consuming an attempt or marking the job failed, then continue the polling pass. A worker with the required mapping can claim it. Queue routing prevents incompatible workers from repeatedly claiming the same job. Configure your LogBox appenders to send worker logs to a shared destination when central logging is needed.
+
+### Batch result accounting
+
+Run migration `2000_01_01_000011_track_processed_batch_jobs.cfc` before deploying this version, including on custom batch tables. Batch results are recorded once per job ID under a row lock; repeated success or failure callbacks do not consume another pending job or repeat lifecycle callbacks. The new nullable `processedJobIds` column records results going forward. Existing failed IDs remain protected, but successful job IDs from before the migration cannot be reconstructed. Drain existing batches before upgrading if they might receive duplicate callbacks. This accounting does not make a job's external side effects execute exactly once.
 
 ### Database polling
 
