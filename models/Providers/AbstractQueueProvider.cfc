@@ -294,7 +294,7 @@ component accessors="true" {
 					} catch ( any ignored ) {
 					}
 					try {
-						forceFailJob( job.getId(), pool );
+						forceFailJob( job.getId(), pool, job );
 					} catch ( any ignored ) {
 					}
 				}
@@ -342,7 +342,11 @@ component accessors="true" {
 	 * (onFailure hook, interceptors, batch recording) by design — it only runs
 	 * when those paths themselves are broken.
 	 */
-	public void function forceFailJob( required any id, WorkerPool pool ) {
+	public void function forceFailJob(
+		required any id,
+		WorkerPool pool,
+		AbstractJob job
+	) {
 		return;
 	}
 
@@ -398,7 +402,11 @@ component accessors="true" {
 			);
 			// afterJobFailed is what writes failedDate in DBProvider; if it threw, fall back.
 			try {
-				forceFailJob( arguments.job.getId(), arguments.pool );
+				forceFailJob(
+					arguments.job.getId(),
+					arguments.pool,
+					arguments.job
+				);
 			} catch ( any ignored ) {
 			}
 		}
