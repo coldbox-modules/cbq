@@ -308,11 +308,49 @@ component accessors="true" extends="AbstractQueueProvider" {
 	}
 
 	private void function processLockedRecord( required any record, required WorkerPool pool ) {
-		var jobCFC = variables.deserializeJob(
-			arguments.record.payload,
-			arguments.record.id,
-			arguments.record.attempts
-		);
+		try {
+			var jobCFC = variables.deserializeJob(
+				arguments.record.payload,
+				arguments.record.id,
+				arguments.record.attempts
+			);
+		} catch ( cbq.UnknownJobMapping e ) {
+			// No execution has started. Release only this fetched reservation so
+			// another worker can handle it, without consuming an attempt.
+			newQuery()
+				.table( variables.tableName )
+				.where( "id", arguments.record.id )
+				.where( "reservedBy", arguments.pool.getUniqueId() )
+				.whereNull( "reservedDate" )
+				.whereNull( "completedDate" )
+				.whereNull( "failedDate" )
+				.where(
+					"attempts",
+					{
+						"value" : arguments.record.attempts,
+						"sqltype" : "bigint"
+					}
+				)
+				.update(
+					values = {
+						"reservedBy" : {
+							"value" : "",
+							"null" : true,
+							"nulls" : true
+						}
+					},
+					options = variables.defaultQueryOptions
+				);
+			log.warn(
+				"Worker pool [#arguments.pool.getUniqueId()#] cannot handle job [#arguments.record.id#]: #e.message#",
+				{
+					"queue" : arguments.record.queue,
+					"jobId" : arguments.record.id,
+					"pool" : arguments.pool.getUniqueId()
+				}
+			);
+			return;
+		}
 
 		jobCFC.setProviderContext( {
 			"attempt" : arguments.record.attempts,
