@@ -207,7 +207,10 @@ component accessors="true" extends="AbstractQueueProvider" {
 	) {
 		var jobPayload = {
 			"queue" : arguments.queueName,
-			"attempts" : arguments.attempts,
+			"attempts" : {
+				"value" : arguments.attempts,
+				"sqltype" : "bigint"
+			},
 			"availableDate" : getCurrentUnixTimestamp( arguments.delay ),
 			"createdDate" : getCurrentUnixTimestamp(),
 			"payload" : serializeJSON( arguments.job.getMemento() )
@@ -318,12 +321,21 @@ component accessors="true" extends="AbstractQueueProvider" {
 			.whereNull( "reservedDate" )
 			.whereNull( "completedDate" )
 			.whereNull( "failedDate" )
-			.where( "attempts", arguments.job.getCurrentAttempt() )
+			.where(
+				"attempts",
+				{
+					"value" : arguments.job.getCurrentAttempt(),
+					"sqltype" : "bigint"
+				}
+			)
 			.update(
 				values = {
 					"reservedDate" : getCurrentUnixTimestamp(),
 					"availableDate" : getCurrentUnixTimestamp( getTimeoutForJob( arguments.job, arguments.pool ) ),
-					"attempts" : arguments.job.getCurrentAttempt() + 1
+					"attempts" : {
+						"value" : arguments.job.getCurrentAttempt() + 1,
+						"sqltype" : "bigint"
+					}
 				},
 				options = variables.defaultQueryOptions
 			);
@@ -388,7 +400,10 @@ component accessors="true" extends="AbstractQueueProvider" {
 			var context = arguments.job.getProviderContext() ?: {};
 			query.where(
 				"attempts",
-				context.keyExists( "attempt" ) ? context.attempt : arguments.job.getCurrentAttempt()
+				{
+					"value" : context.keyExists( "attempt" ) ? context.attempt : arguments.job.getCurrentAttempt(),
+					"sqltype" : "bigint"
+				}
 			);
 			if ( context.awaitingExecution ?: false ) {
 				query.whereNull( "reservedDate" );
@@ -422,7 +437,10 @@ component accessors="true" extends="AbstractQueueProvider" {
 			values = {
 				"queue" : getQueueForJob( arguments.job, arguments.pool ),
 				"payload" : serializeJSON( job.getMemento() ),
-				"attempts" : arguments.job.getCurrentAttempt(),
+				"attempts" : {
+					"value" : arguments.job.getCurrentAttempt(),
+					"sqltype" : "bigint"
+				},
 				"reservedBy" : {
 					"value" : "",
 					"null" : true,
