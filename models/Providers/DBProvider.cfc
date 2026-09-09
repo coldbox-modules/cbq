@@ -378,7 +378,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 	}
 
 	public void function releaseJob( required AbstractJob job, required WorkerPool pool ) {
-		arguments.job.setCurrentAttempt( arguments.job.getCurrentAttempt() + 1 );
+		// The current execution was already counted by processLockedRecord/marshalJob.
 		newQuery()
 			.table( variables.tableName )
 			.where( "id", arguments.job.getId() )
