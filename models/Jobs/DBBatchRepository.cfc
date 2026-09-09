@@ -67,6 +67,7 @@ component singleton accessors="true" {
 					"successfulJobs" : 0,
 					"failedJobs" : 0,
 					"failedJobIds" : "[]",
+					"processedJobIds" : "[]",
 					"options" : serializeJSON( arguments.batch.getOptions() ),
 					"createdDate" : variables.getCurrentUnixTimestamp()
 				},
@@ -107,7 +108,29 @@ component singleton accessors="true" {
 				throw( type = "cbq.BatchNotFound", message = "No batch found for id [#arguments.batchId#]" );
 			}
 
+			var processedJobIds = isNull( data.processedJobIds ) || data.processedJobIds == "" ? [] : deserializeJSON(
+				data.processedJobIds
+			);
+			// Existing failed IDs also protect batches created before this migration.
+			if (
+				data.pendingJobs <= 0 || processedJobIds.find( toString( arguments.jobId ) ) || deserializeJSON(
+					data.failedJobIds
+				).find( toString( arguments.jobId ) )
+			) {
+				return {
+					"pendingJobs" : data.pendingJobs,
+					"failedJobs" : data.failedJobs,
+					"recorded" : false,
+					"allJobsHaveRanExactlyOnce" : false
+				};
+			}
+			processedJobIds.append( toString( arguments.jobId ) );
+
 			var updatedValues = {
+				"processedJobIds" : {
+					"value" : serializeJSON( processedJobIds ),
+					"cfsqltype" : "CF_SQL_LONGVARCHAR"
+				},
 				"pendingJobs" : data.pendingJobs - 1,
 				"successfulJobs" : data.successfulJobs + 1,
 				"failedJobs" : data.failedJobs
@@ -120,6 +143,7 @@ component singleton accessors="true" {
 			return {
 				"pendingJobs" : data.pendingJobs - 1,
 				"failedJobs" : data.failedJobs,
+				"recorded" : true,
 				"allJobsHaveRanExactlyOnce" : ( data.pendingJobs - 1 ) == 0
 			};
 		}
@@ -137,7 +161,29 @@ component singleton accessors="true" {
 				throw( type = "cbq.BatchNotFound", message = "No batch found for id [#arguments.batchId#]" );
 			}
 
+			var processedJobIds = isNull( data.processedJobIds ) || data.processedJobIds == "" ? [] : deserializeJSON(
+				data.processedJobIds
+			);
+			// Existing failed IDs also protect batches created before this migration.
+			if (
+				data.pendingJobs <= 0 || processedJobIds.find( toString( arguments.jobId ) ) || deserializeJSON(
+					data.failedJobIds
+				).find( toString( arguments.jobId ) )
+			) {
+				return {
+					"pendingJobs" : data.pendingJobs,
+					"failedJobs" : data.failedJobs,
+					"recorded" : false,
+					"allJobsHaveRanExactlyOnce" : false
+				};
+			}
+			processedJobIds.append( toString( arguments.jobId ) );
+
 			var updatedValues = {
+				"processedJobIds" : {
+					"value" : serializeJSON( processedJobIds ),
+					"cfsqltype" : "CF_SQL_LONGVARCHAR"
+				},
 				"pendingJobs" : data.pendingJobs - 1,
 				"failedJobs" : data.failedJobs + 1,
 				"failedJobIds" : serializeJSON( deserializeJSON( data.failedJobIds ).append( arguments.jobId ) )
@@ -150,6 +196,7 @@ component singleton accessors="true" {
 			return {
 				"pendingJobs" : data.pendingJobs - 1,
 				"failedJobs" : data.failedJobs + 1,
+				"recorded" : true,
 				"allJobsHaveRanExactlyOnce" : ( data.pendingJobs - 1 ) == 0
 			};
 		}

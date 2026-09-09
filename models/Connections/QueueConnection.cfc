@@ -14,6 +14,19 @@ component accessors="true" {
 		return this;
 	}
 
+	/** Opt-in batching; existing custom providers retain their normal push method. */
+	public QueueConnection function pushMany( required array entries ) {
+		var provider = getProvider();
+		if ( structKeyExists( provider, "pushMany" ) ) {
+			provider.pushMany( arguments.entries );
+		} else {
+			for ( var entry in arguments.entries ) {
+				provider.push( argumentCollection = entry );
+			}
+		}
+		return this;
+	}
+
 	public struct function getMemento() {
 		return {
 			"name" : variables.name,

@@ -7,6 +7,19 @@
 Adobe 2018+ or Lucee 5+
 ColdBox 6+
 
+### Batch UUID library
+
+Batch IDs use the Java UUID Generator bundled in `cbq/lib`. Add that directory to your application's `Application.cfc` Java load paths before creating batches (adjust the path to your module installation):
+
+```cfc
+this.javaSettings = {
+    loadPaths : [ expandPath( "/modules/cbq/lib" ) ],
+    reloadOnChange : false
+};
+```
+
+If you already configure `this.javaSettings`, append this directory to its existing `loadPaths`. Restart the application after changing Java load paths. A `ClassNotFoundException` for `com.fasterxml.uuid.Generators` means this bundled library is missing from the application's classpath; changing the Java version alone does not add it. Use a Java version supported by your CFML engine.
+
 ## Definitions
 
 ### Queue Connection
@@ -61,6 +74,32 @@ Future planned providers include:
 
 Each of the providers takes different configuration when creating a connection.
 Refer to the specific provider documentation for details.
+
+### Database compatibility
+
+For MySQL, `DBProvider@cbq` requires **MySQL 8.0 or later**. Its reservation query uses `FOR UPDATE SKIP LOCKED`, which MySQL 5.7 does not support. See [MySQL locking reads](https://dev.mysql.com/doc/refman/8.0/en/innodb-locking-reads.html). cbq does not ship a MySQL 5.7 fallback grammar. Upgrade MySQL before enabling database workers; removing the lock clause changes concurrent worker behavior.
+
+### Workers with different job mappings
+
+Use separate queues and explicitly configure each worker pool's queues when workers have different job components. An unknown mapping is logged with the job ID and worker pool. Database workers release that reservation without consuming an attempt or marking the job failed, then continue the polling pass. A worker with the required mapping can claim it. Queue routing prevents incompatible workers from repeatedly claiming the same job. Configure your LogBox appenders to send worker logs to a shared destination when central logging is needed.
+
+### Batch result accounting
+
+Run migration `2000_01_01_000011_track_processed_batch_jobs.cfc` before deploying this version, including on custom batch tables. Batch results are recorded once per job ID under a row lock; repeated success or failure callbacks do not consume another pending job or repeat lifecycle callbacks. The new nullable `processedJobIds` column records results going forward. Existing failed IDs remain protected, but successful job IDs from before the migration cannot be reconstructed. Drain existing batches before upgrading if they might receive duplicate callbacks. This accounting does not make a job's external side effects execute exactly once.
+
+### Database polling
+
+`DBProvider@cbq` polls once every five seconds by default. Each poll fetches only as many jobs as the worker pool currently has available slots. For short jobs, polling can therefore determine backlog drain time even when transport is fast.
+
+Set `pollIntervalMilliseconds` in the connection properties to configure the delay between completed polling passes. It must be a positive integer; the default is `5000`. This configures each native database watcher on that connection and takes effect when workers are registered. Worker quantity, job timeout, retry backoff and ownership checks are unchanged.
+
+```cfc
+newConnection( "mail" )
+    .setProvider( "DBProvider@cbq" )
+    .setProperties( { "pollIntervalMilliseconds": 250 } );
+```
+
+A shorter interval also increases polling while the queue is idle. Measure database load, worker capacity, transport limits and queue age before choosing it. This setting does not increase the worker pool's concurrency or guarantee a delivery time.
 
 ## Installation and Setup
 
@@ -241,3 +280,24 @@ To dispatch the chain, you must call `dispatch` on the returned Job.
 | Name | Type | Required | Default | Description |
 | ----- | ------ | -------- | ------- | ------- |
 | chain | Job[] | false | `[]` | An array of Job instances to chain after this one. |
+
+## Opt-in database enqueue batches
+
+`Dispatcher@cbq.bulkDispatch` accepts `batchSize` from 1 to 100. The default is 1 and preserves the existing order: announce `onCBQJobAdded`, reset the job's attempt, then push that job before announcing the next.
+
+```cfc
+transaction {
+    getInstance( "Dispatcher@cbq" ).bulkDispatch(
+        jobs = jobs,
+        connectionName = "db",
+        queueName = "mail",
+        batchSize = 100
+    );
+}
+```
+
+With a larger batch size, each job is still announced separately and becomes its own queue row, with its own payload and lifecycle. Events for one chunk run before that chunk is persisted. Choose the default if a job-added interceptor needs to read earlier jobs from the same chunk. An explicit queue overrides job queues as before; otherwise each job keeps its effective queue. As with existing `bulkDispatch`, this does not use each job's backoff as an initial delay.
+
+The DB provider writes at most 100 rows (500 bindings) per insert. Other providers continue through their ordinary `push` implementation unless they implement `pushMany(entries)`. Entries contain the ordinary `push` arguments: `queueName`, `job`, and optionally `delay` and `attempts`. `DBProvider.pushMany` also bounds direct calls to 100 rows per insert. It uses the configured table, query options and datasource.
+
+The caller owns transaction boundaries. Wrap the dispatch with related database changes when all chunks must commit or roll back together. Without a surrounding transaction, a later event, serialization or insert failure can leave earlier chunks persisted.

@@ -15,6 +15,14 @@ component accessors="true" extends="AbstractQueueProvider" {
 	}
 
 	public DBProvider function setProperties( required struct properties ) {
+		var pollInterval = arguments.properties.keyExists( "pollIntervalMilliseconds" ) ? arguments.properties.pollIntervalMilliseconds : 5000;
+		if ( !isSimpleValue( pollInterval ) || !isValid( "integer", pollInterval ) || pollInterval <= 0 ) {
+			throw(
+				type = "cbq.DBProvider.InvalidPollInterval",
+				message = "pollIntervalMilliseconds must be a positive integer."
+			);
+		}
+		variables.pollIntervalMilliseconds = pollInterval;
 		variables.properties = arguments.properties;
 		variables.tableName = variables.properties.keyExists( "tableName" ) ? variables.properties.tableName : "cbq_jobs";
 		variables.defaultQueryOptions = variables.properties.keyExists( "queryOptions" ) ? variables.properties.queryOptions : {};
@@ -63,7 +71,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 
 				return lockedRecords.len();
 			} )
-			.spacedDelay( 5, "seconds" )
+			.spacedDelay( variables.pollIntervalMilliseconds, "milliseconds" )
 			.before( function() {
 				application.cbController.getModuleService().loadMappings();
 				if ( variables.log.canDebug() ) {
@@ -205,20 +213,55 @@ component accessors="true" extends="AbstractQueueProvider" {
 		numeric delay = 0,
 		numeric attempts = 0
 	) {
+		var jobPayload = buildJobPayload( argumentCollection = arguments );
+		newQuery().table( variables.tableName ).insert( jobPayload, variables.defaultQueryOptions );
+		return this;
+	}
+
+	/** Each job remains a separate row; the caller owns transaction boundaries. */
+	public any function pushMany( required array entries ) {
+		var rows = [];
+		for ( var entry in arguments.entries ) {
+			rows.append( buildJobPayload( argumentCollection = entry ) );
+			// Five bindings per row; stay below SQL Server parameter/row limits.
+			if ( rows.len() == 100 ) {
+				newQuery().table( variables.tableName ).insert( rows, variables.defaultQueryOptions );
+				rows = [];
+			}
+		}
+		if ( rows.len() ) {
+			newQuery().table( variables.tableName ).insert( rows, variables.defaultQueryOptions );
+		}
+		return this;
+	}
+
+	private struct function buildJobPayload(
+		required string queueName,
+		required AbstractJob job,
+		numeric delay = 0,
+		numeric attempts = 0
+	) {
 		var jobPayload = {
-			"queue" : arguments.queueName,
-			"attempts" : arguments.attempts,
+			"queue" : {
+				"value" : arguments.queueName,
+				"cfsqltype" : "varchar"
+			},
+			"attempts" : {
+				"value" : arguments.attempts,
+				"sqltype" : "bigint"
+			},
 			"availableDate" : getCurrentUnixTimestamp( arguments.delay ),
 			"createdDate" : getCurrentUnixTimestamp(),
-			"payload" : serializeJSON( arguments.job.getMemento() )
+			"payload" : {
+				"value" : serializeJSON( arguments.job.getMemento() ),
+				"cfsqltype" : "varchar"
+			}
 		};
 
 		if ( variables.log.canDebug() ) {
 			variables.log.debug( "Pushing job to #arguments.queueName# queue.", jobPayload );
 		}
-
-		newQuery().table( variables.tableName ).insert( jobPayload, variables.defaultQueryOptions );
-		return this;
+		return jobPayload;
 	}
 
 	public function function startWorker( required WorkerPool pool ) {
@@ -265,12 +308,54 @@ component accessors="true" extends="AbstractQueueProvider" {
 	}
 
 	private void function processLockedRecord( required any record, required WorkerPool pool ) {
-		var jobCFC = variables.deserializeJob(
-			arguments.record.payload,
-			arguments.record.id,
-			arguments.record.attempts
-		);
+		try {
+			var jobCFC = variables.deserializeJob(
+				arguments.record.payload,
+				arguments.record.id,
+				arguments.record.attempts
+			);
+		} catch ( cbq.UnknownJobMapping e ) {
+			// No execution has started. Release only this fetched reservation so
+			// another worker can handle it, without consuming an attempt.
+			newQuery()
+				.table( variables.tableName )
+				.where( "id", arguments.record.id )
+				.where( "reservedBy", arguments.pool.getUniqueId() )
+				.whereNull( "reservedDate" )
+				.whereNull( "completedDate" )
+				.whereNull( "failedDate" )
+				.where(
+					"attempts",
+					{
+						"value" : arguments.record.attempts,
+						"sqltype" : "bigint"
+					}
+				)
+				.update(
+					values = {
+						"reservedBy" : {
+							"value" : "",
+							"null" : true,
+							"nulls" : true
+						}
+					},
+					options = variables.defaultQueryOptions
+				);
+			log.warn(
+				"Worker pool [#arguments.pool.getUniqueId()#] cannot handle job [#arguments.record.id#]: #e.message#",
+				{
+					"queue" : arguments.record.queue,
+					"jobId" : arguments.record.id,
+					"pool" : arguments.pool.getUniqueId()
+				}
+			);
+			return;
+		}
 
+		jobCFC.setProviderContext( {
+			"attempt" : arguments.record.attempts,
+			"awaitingExecution" : true
+		} );
 		var jobMaxAttempts = getMaxAttemptsForJob( jobCFC, arguments.pool );
 		if ( jobMaxAttempts != 0 && arguments.record.attempts >= jobMaxAttempts ) {
 			if ( log.canWarn() ) {
@@ -287,7 +372,13 @@ component accessors="true" extends="AbstractQueueProvider" {
 			return;
 		}
 
-		incrementJobAttempts( jobCFC, arguments.pool );
+		if ( !incrementJobAttempts( jobCFC, arguments.pool ) ) {
+			return;
+		}
+		jobCFC.setProviderContext( {
+			"attempt" : arguments.record.attempts + 1,
+			"awaitingExecution" : false
+		} );
 		application.cbController.getModuleService().loadMappings();
 		variables.marshalJob(
 			job = jobCFC,
@@ -297,31 +388,47 @@ component accessors="true" extends="AbstractQueueProvider" {
 		);
 	}
 
-	private void function incrementJobAttempts( required AbstractJob job, required WorkerPool pool ) {
+	private boolean function incrementJobAttempts( required AbstractJob job, required WorkerPool pool ) {
 		if ( log.canDebug() ) {
 			log.debug( "Reserving job ###arguments.job.getId()#" );
 		}
-		newQuery()
+		var reservation = newQuery()
 			.table( variables.tableName )
 			.where( "id", arguments.job.getId() )
 			.where( "reservedBy", arguments.pool.getUniqueId() )
 			.whereNull( "reservedDate" )
+			.whereNull( "completedDate" )
+			.whereNull( "failedDate" )
+			.where(
+				"attempts",
+				{
+					"value" : arguments.job.getCurrentAttempt(),
+					"sqltype" : "bigint"
+				}
+			)
 			.update(
 				values = {
 					"reservedDate" : getCurrentUnixTimestamp(),
 					"availableDate" : getCurrentUnixTimestamp( getTimeoutForJob( arguments.job, arguments.pool ) ),
-					"attempts" : arguments.job.getCurrentAttempt() + 1
+					"attempts" : {
+						"value" : arguments.job.getCurrentAttempt() + 1,
+						"sqltype" : "bigint"
+					}
 				},
 				options = variables.defaultQueryOptions
 			);
 		if ( log.canDebug() ) {
 			log.debug( "Reserved job ###arguments.job.getId()#" );
 		}
+		return reservation.result.recordCount == 1;
 	}
 
 	private void function afterJobRun( required AbstractJob job, required WorkerPool pool ) {
-		markJobAsCompletedById( arguments.job.getId(), arguments.pool );
-		// deleteJobById( arguments.job.getId() );
+		ownedJobQuery(
+			arguments.job.getId(),
+			arguments.pool,
+			arguments.job
+		).update( values = { "completedDate" : getCurrentUnixTimestamp() }, options = variables.defaultQueryOptions );
 	}
 
 	private void function afterJobFailed(
@@ -329,41 +436,62 @@ component accessors="true" extends="AbstractQueueProvider" {
 		AbstractJob job,
 		WorkerPool pool
 	) {
-		markJobAsFailedById( arguments.id, isNull( arguments.pool ) ? javacast( "null", "" ) : arguments.pool );
-		// deleteJobById( arguments.id );
+		ownedJobQuery( argumentCollection = arguments ).update(
+			values = { "failedDate" : getCurrentUnixTimestamp() },
+			options = variables.defaultQueryOptions
+		);
 	}
 
-	private void function markJobAsCompletedById( required numeric id, required WorkerPool pool ) {
-		newQuery()
-			.table( variables.tableName )
-			.where( "id", arguments.id )
-			.where( "reservedBy", arguments.pool.getUniqueId() )
-			.where( ( q ) => {
-				q.whereNull( "completedDate" );
-				q.whereNull( "failedDate" );
-			} )
-			.update( values = { "completedDate" : getCurrentUnixTimestamp() }, options = variables.defaultQueryOptions );
-	}
-
-	public void function forceFailJob( required any id, WorkerPool pool ) {
+	public void function forceFailJob(
+		required any id,
+		WorkerPool pool,
+		AbstractJob job
+	) {
+		if ( !isNull( arguments.job ) ) {
+			ownedJobQuery( argumentCollection = arguments ).update(
+				values = { "failedDate" : getCurrentUnixTimestamp() },
+				options = variables.defaultQueryOptions
+			);
+			return;
+		}
+		// Preserve the explicit ID-only administrative fallback contract.
 		newQuery()
 			.table( variables.tableName )
 			.where( "id", arguments.id )
 			.update( values = { "failedDate" : getCurrentUnixTimestamp() }, options = variables.defaultQueryOptions );
 	}
 
-	private void function markJobAsFailedById( required numeric id, WorkerPool pool ) {
-		newQuery()
+	private any function ownedJobQuery(
+		required any id,
+		WorkerPool pool,
+		AbstractJob job
+	) {
+		var query = newQuery()
 			.table( variables.tableName )
 			.where( "id", arguments.id )
-			.when( !isNull( arguments.pool ), ( q ) => {
-				q.where( "reservedBy", pool.getUniqueId() );
-			} )
-			.where( ( q ) => {
-				q.whereNull( "completedDate" );
-				q.whereNull( "failedDate" );
-			} )
-			.update( values = { "failedDate" : getCurrentUnixTimestamp() }, options = variables.defaultQueryOptions );
+			.whereNull( "completedDate" )
+			.whereNull( "failedDate" );
+		if ( !isNull( arguments.pool ) ) {
+			query.where( "reservedBy", arguments.pool.getUniqueId() );
+		}
+		if ( !isNull( arguments.job ) ) {
+			var context = arguments.job.getProviderContext() ?: {};
+			query.where(
+				"attempts",
+				{
+					"value" : context.keyExists( "attempt" ) ? context.attempt : arguments.job.getCurrentAttempt(),
+					"sqltype" : "bigint"
+				}
+			);
+			if ( context.awaitingExecution ?: false ) {
+				query.whereNull( "reservedDate" );
+			} else {
+				// A reclaimed-but-not-started row still has the previous count.
+				// Its cleared reservedDate fences callbacks from that execution.
+				query.whereNotNull( "reservedDate" );
+			}
+		}
+		return query;
 	}
 
 	private any function buildMaxAttemptsReachedException( required AbstractJob job, required numeric maxAttempts ) {
@@ -379,35 +507,34 @@ component accessors="true" extends="AbstractQueueProvider" {
 
 	public void function releaseJob( required AbstractJob job, required WorkerPool pool ) {
 		// The current execution was already counted by processLockedRecord/marshalJob.
-		newQuery()
-			.table( variables.tableName )
-			.where( "id", arguments.job.getId() )
-			.where( "reservedBy", arguments.pool.getUniqueId() )
-			.where( ( q ) => {
-				q.whereNull( "completedDate" );
-				q.whereNull( "failedDate" );
-			} )
-			.update(
-				values = {
-					"queue" : getQueueForJob( arguments.job, arguments.pool ),
-					"payload" : serializeJSON( job.getMemento() ),
-					"attempts" : arguments.job.getCurrentAttempt(),
-					"reservedBy" : {
-						"value" : "",
-						"null" : true,
-						"nulls" : true
-					},
-					"availableDate" : getCurrentUnixTimestamp( getBackoffForJob( arguments.job, arguments.pool ) ),
-					"reservedDate" : {
-						"value" : "",
-						"cfsqltype" : "cf_sql_bigint",
-						"null" : true,
-						"nulls" : true
-					},
-					"lastReleasedDate" : getCurrentUnixTimestamp()
+		ownedJobQuery(
+			arguments.job.getId(),
+			arguments.pool,
+			arguments.job
+		).update(
+			values = {
+				"queue" : getQueueForJob( arguments.job, arguments.pool ),
+				"payload" : serializeJSON( job.getMemento() ),
+				"attempts" : {
+					"value" : arguments.job.getCurrentAttempt(),
+					"sqltype" : "bigint"
 				},
-				options = variables.defaultQueryOptions
-			);
+				"reservedBy" : {
+					"value" : "",
+					"null" : true,
+					"nulls" : true
+				},
+				"availableDate" : getCurrentUnixTimestamp( getBackoffForJob( arguments.job, arguments.pool ) ),
+				"reservedDate" : {
+					"cfsqltype" : "cf_sql_bigint",
+					"value" : "",
+					"null" : true,
+					"nulls" : true
+				},
+				"lastReleasedDate" : getCurrentUnixTimestamp()
+			},
+			options = variables.defaultQueryOptions
+		);
 	}
 
 	private array function fetchPotentiallyOpenRecords( required numeric capacity, required WorkerPool pool ) {
