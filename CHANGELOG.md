@@ -1,3 +1,11 @@
+# v6.0.2
+## 09 Sep 2026 — 01:23:06 UTC
+
+### other
+
++ __\*:__ fix: Count DB job attempts once per execution ([610d1db](https://github.com/coldbox-modules/cbq/commit/610d1dbb345e15885cb266aec9d2b0c601e9ee21))
+
+
 # v6.0.1
 ## 08 Sep 2026 — 04:17:15 UTC
 
