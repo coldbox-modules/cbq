@@ -1,3 +1,30 @@
+# v7.0.0
+## 09 Sep 2026 — 03:19:55 UTC
+
+### BREAKING
+
++ __batches:__ count each terminal job result once ([7db843d](https://github.com/coldbox-modules/cbq/commit/7db843d3d6fba142b214ec8171b2de0d69c758f5))
+
+### feat
+
++ __db:__ configure native polling interval per connection ([d877cc7](https://github.com/coldbox-modules/cbq/commit/d877cc72f6166ce5d16704e1e360801ebb974dfe))
+
+### fix
+
++ __workers:__ preserve jobs with unknown mappings ([84ffcc7](https://github.com/coldbox-modules/cbq/commit/84ffcc7880715fe70f43a7769518945c4a3852f9))
+
+### other
+
++ __\*:__ Merge pull request #38 from coldbox-modules/next ([95b54b2](https://github.com/coldbox-modules/cbq/commit/95b54b25be84028813747d791ca3f45a5d1aefc5))
++ __\*:__ docs: explain database and batch runtime requirements ([fad884a](https://github.com/coldbox-modules/cbq/commit/fad884a6398f4341bdc3c91e8b473337b6420536))
++ __\*:__ feat: Add opt-in batched database enqueueing ([16447da](https://github.com/coldbox-modules/cbq/commit/16447da876f4aaa05569b425b7dd1b039d277c66))
++ __\*:__ perf: Bind DB queue names and job payloads as text ([628a6e3](https://github.com/coldbox-modules/cbq/commit/628a6e34b5fc76785d2645eac8011b20fd31274c))
++ __\*:__ fix: Widen persisted job execution counts for long-lived retries ([b58669a](https://github.com/coldbox-modules/cbq/commit/b58669acec495d74b5145d6e0a58da72c9adda4f))
++ __\*:__ fix: Fence DB callbacks to their execution attempt ([fa380f7](https://github.com/coldbox-modules/cbq/commit/fa380f7035d749b87983fc0980ba5e41958cbd80))
++ __\*:__ ci: run pull request checks targeting next
+ ([954b41e](https://github.com/coldbox-modules/cbq/commit/954b41e279a0a44c08416c80f19807d1145a6698))
+
+
 # v6.0.2
 ## 09 Sep 2026 — 01:23:06 UTC
 
