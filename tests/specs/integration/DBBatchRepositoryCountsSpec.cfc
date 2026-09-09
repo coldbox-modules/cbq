@@ -2,6 +2,76 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 
 	function run() {
 		describe( "DBBatchRepository counts", function() {
+			it( "counts a repeated result only once while other jobs remain pending", function() {
+				var repository = getWireBox().getInstance( "DBBatchRepository@cbq" );
+				var batch = createTrackedBatch( repository, 2 );
+				batch.recordSuccessfulJob( "first" );
+				batch.recordSuccessfulJob( "first" );
+				batch.recordFailedJob( "first", {} );
+				var stored = repository.find( batch.getId() );
+				expect( stored.getPendingJobs() ).toBe( 1 );
+				expect( stored.getSuccessfulJobs() ).toBe( 1 );
+				expect( stored.getFailedJobs() ).toBe( 0 );
+				batch.recordFailedJob( "second", {} );
+				batch.recordFailedJob( "second", {} );
+				batch.recordSuccessfulJob( "second" );
+				stored = repository.find( batch.getId() );
+				expect( stored.getPendingJobs() ).toBe( 0 );
+				expect( stored.getSuccessfulJobs() ).toBe( 1 );
+				expect( stored.getFailedJobs() ).toBe( 1 );
+				expect( stored.getFailedJobIds() ).toBe( [ "second" ] );
+			} );
+
+			it( "does not repeat lifecycle jobs or underflow a completed batch", function() {
+				var repository = getWireBox().getInstance( "DBBatchRepository@cbq" );
+				var batch = createTrackedBatch( repository, 1 );
+				prepareMock( batch ).$( "dispatchThenJobIfNeeded" ).$( "dispatchFinallyJobIfNeeded" );
+				batch.recordSuccessfulJob( "only" );
+				batch.recordSuccessfulJob( "only" );
+				batch.recordFailedJob( "only", {} );
+				expect( repository.find( batch.getId() ).getPendingJobs() ).toBe( 0 );
+				expect( batch.$once( "dispatchThenJobIfNeeded" ) ).toBeTrue();
+				expect( batch.$once( "dispatchFinallyJobIfNeeded" ) ).toBeTrue();
+			} );
+
+			it( "serializes concurrent reports for the same job", function() {
+				var repository = getWireBox().getInstance( "DBBatchRepository@cbq" );
+				var batch = createTrackedBatch( repository, 2 );
+				var batchId = batch.getId();
+				var async = getInstance( "coldbox:asyncManager" );
+				var first = async.newFuture( () => repository.decrementPendingJobs( batchId, "same" ) );
+				var second = async.newFuture( () => repository.decrementPendingJobs( batchId, "same" ) );
+				first.get();
+				second.get();
+				var stored = repository.find( batchId );
+				expect( stored.getPendingJobs() ).toBe( 1 );
+				expect( stored.getSuccessfulJobs() ).toBe( 1 );
+			} );
+
+			it( "preserves known failures on batches predating the processed IDs column", function() {
+				var repository = getWireBox().getInstance( "DBBatchRepository@cbq" );
+				var batch = createTrackedBatch( repository, 2 );
+				getInstance( "QueryBuilder@qb" )
+					.table( "cbq_batches" )
+					.where( "id", batch.getId() )
+					.update( {
+						"pendingJobs" : 1,
+						"failedJobs" : 1,
+						"failedJobIds" : '["old-failure"]',
+						"processedJobIds" : {
+							"value" : "",
+							"null" : true,
+							"nulls" : true
+						}
+					} );
+				batch.recordFailedJob( "old-failure", {} );
+				batch.recordSuccessfulJob( "remaining" );
+				var stored = repository.find( batch.getId() );
+				expect( stored.getPendingJobs() ).toBe( 0 );
+				expect( stored.getFailedJobs() ).toBe( 1 );
+				expect( stored.getSuccessfulJobs() ).toBe( 1 );
+			} );
+
 			it( "initializes successfulJobs for newly stored batches", function() {
 				var repository = getWireBox().getInstance( "DBBatchRepository@cbq" );
 				var batch = repository.store(
