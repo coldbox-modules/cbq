@@ -208,7 +208,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 		var jobPayload = {
 			"queue" : {
 				"value" : arguments.queueName,
-				"cfsqltype" : "cf_sql_varchar"
+				"cfsqltype" : "varchar"
 			},
 			"attempts" : {
 				"value" : arguments.attempts,
@@ -218,7 +218,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 			"createdDate" : getCurrentUnixTimestamp(),
 			"payload" : {
 				"value" : serializeJSON( arguments.job.getMemento() ),
-				"cfsqltype" : "cf_sql_varchar"
+				"cfsqltype" : "varchar"
 			}
 		};
 
