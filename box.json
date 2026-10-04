@@ -1,13 +1,13 @@
 {
-    "name": "cbq",
-    "version": "7.0.1-alpha.1",
-    "author": "Eric Peterson <eric@elpete.com>",
-    "location": "forgeboxStorage",
-    "homepage": "https://github.com/coldbox-modules/cbq",
-    "documentation": "https://github.com/coldbox-modules/cbq",
-    "repository": {
-        "type": "git",
-        "URL": "https://github.com/coldbox-modules/cbq"
+    "name":"cbq",
+    "version":"7.0.0",
+    "author":"Eric Peterson <eric@elpete.com>",
+    "location":"forgeboxStorage",
+    "homepage":"https://github.com/coldbox-modules/cbq",
+    "documentation":"https://github.com/coldbox-modules/cbq",
+    "repository":{
+        "type":"git",
+        "URL":"https://github.com/coldbox-modules/cbq"
     },
     "bugs": "https://github.com/coldbox-modules/cbq/issues",
     "slug": "cbq",
