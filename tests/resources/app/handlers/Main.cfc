@@ -13,12 +13,15 @@ component extends="coldbox.system.EventHandler" {
 	 */
 	function data( event, rc, prc ) {
 		return [
-			{ "id" : createUUID(), name   : "Luis" },
-			{ "id" : createUUID(), name   : "JOe" },
-			{ "id" : createUUID(), name   : "Bob" },
 			{
 				"id" : createUUID(),
-				name   : "Darth"
+				name    : "Luis"
+			},
+			{ "id" : createUUID(), name    : "JOe" },
+			{ "id" : createUUID(), name    : "Bob" },
+			{
+				"id" : createUUID(),
+				name    : "Darth"
 			}
 		];
 	}
