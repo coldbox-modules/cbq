@@ -220,6 +220,12 @@ component extends="testbox.system.BaseSpec" {
 					"onCBQJobPublishException"
 				] );
 			} );
+			it( "observes publication of the final partial bulk chunk", function() {
+				assertTrailingChunkObserved( false );
+			} );
+			it( "observes rejection of the final partial bulk chunk and preserves its failure", function() {
+				assertTrailingChunkObserved( true );
+			} );
 			it( "preserves successful publication when both its observer and diagnostic logger fail", function() {
 				var pushed = 0;
 				var dispatcher = createMock( "cbq.models.Jobs.Dispatcher" );
@@ -389,6 +395,67 @@ component extends="testbox.system.BaseSpec" {
 				}
 			} );
 		} );
+	}
+
+	private void function assertTrailingChunkObserved( required boolean rejectTail ) {
+		var states = [];
+		var published = [];
+		var dispatcher = createMock( "cbq.models.Jobs.Dispatcher" );
+		var connection = {
+			getDefaultQueue : () => "synthetic",
+			pushMany : function( entries ) {
+				for ( var entry in entries ) {
+					published.append( entry.job.getId() );
+				}
+			},
+			push : function( job ) {
+				if ( rejectTail ) {
+					throw( type = "EnqueueFailure", message = "final chunk failed" );
+				}
+				published.append( job.getId() );
+			}
+		};
+		dispatcher.$property(
+			"config",
+			"variables",
+			{
+				getDefaultConnectionName : () => "synthetic",
+				getConnection : () => connection
+			}
+		);
+		dispatcher.$property(
+			"interceptorService",
+			"variables",
+			{
+				announce : function( state, data ) {
+					states.append( { state : state, id : data.job.getId() } );
+				}
+			}
+		);
+		var jobs = [
+			createMock( "cbq.models.Jobs.AbstractJob" ).init().setId( "first" ),
+			createMock( "cbq.models.Jobs.AbstractJob" ).init().setId( "second" ),
+			createMock( "cbq.models.Jobs.AbstractJob" ).init().setId( "tail" )
+		];
+		if ( arguments.rejectTail ) {
+			expect( () => dispatcher.bulkDispatch( jobs = jobs, batchSize = 2 ) ).toThrow(
+				"EnqueueFailure",
+				"final chunk failed"
+			);
+			expect( published ).toBe( [ "first", "second" ] );
+		} else {
+			dispatcher.bulkDispatch( jobs = jobs, batchSize = 2 );
+			expect( published ).toBe( [ "first", "second", "tail" ] );
+		}
+		expect( states.map( ( entry ) => entry.state ) ).toBe( [
+			"onCBQJobAdded",
+			"onCBQJobAdded",
+			"onCBQJobPublished",
+			"onCBQJobPublished",
+			"onCBQJobAdded",
+			arguments.rejectTail ? "onCBQJobPublishException" : "onCBQJobPublished"
+		] );
+		expect( states[ 6 ].id ).toBe( "tail" );
 	}
 
 }

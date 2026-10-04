@@ -88,7 +88,7 @@ component singleton accessors="true" {
 		}
 
 		if ( pending.len() ) {
-			connection.pushMany( pending );
+			publishMany( connection, pending );
 		}
 
 		return this;
