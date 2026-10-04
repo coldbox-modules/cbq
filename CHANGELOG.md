@@ -1,3 +1,36 @@
+# v7.0.1
+## 04 Oct 2026 — 09:22:47 UTC
+
+### other
+
++ __\*:__ feat: Add observability hooks ([ff37570](https://github.com/coldbox-modules/cbq/commit/ff375702336f8a36b9ac3d94120b89f1bb6b880c))
++ __\*:__ Merge branch 'main' into feat/observability-hooks ([084b82a](https://github.com/coldbox-modules/cbq/commit/084b82aac3f9cf903c6b5382e417c9e111cab2e6))
++ __\*:__ Fix cross-engine observation assertions and isolate SQL compilation mocks
+ ([89fb36a](https://github.com/coldbox-modules/cbq/commit/89fb36a3996bdce8c351dca7dbb2bf70bfe83d6d))
++ __\*:__ Pin stable formatter and check formatting without automated commits
+ ([c47db61](https://github.com/coldbox-modules/cbq/commit/c47db613e467056c0f982e56827cdf5936515881))
++ __\*:__ Apply cfformat changes
+ ([a96190c](https://github.com/coldbox-modules/cbq/commit/a96190ca352b41bf91dcb1684a8b96dac74d6ef0))
++ __\*:__ Report observer and recovery failures without altering queue outcomes
+ ([3498239](https://github.com/coldbox-modules/cbq/commit/34982390cd613435e02ad2b28d14a3cc10eec19a))
++ __\*:__ Apply cfformat changes
+ ([a04aca1](https://github.com/coldbox-modules/cbq/commit/a04aca1ae33397f91956d21df6767afce43834a5))
++ __\*:__ Apply cfformat changes
+ ([ea0eb14](https://github.com/coldbox-modules/cbq/commit/ea0eb148c2e8e1e8ba6ec9d56ac56c4984e31958))
++ __\*:__ Apply cfformat changes
+ ([f59a643](https://github.com/coldbox-modules/cbq/commit/f59a643d2391d7ff7ec4ae64461adf1fb76e6b18))
++ __\*:__ Apply cfformat changes
+ ([492fcb4](https://github.com/coldbox-modules/cbq/commit/492fcb44b12b167eec66f6f388ca974834f4b56f))
++ __\*:__ Apply cfformat changes
+ ([375a3d0](https://github.com/coldbox-modules/cbq/commit/375a3d05514da810052d3ffd0107c595ffd9bd17))
++ __\*:__ Apply cfformat changes
+ ([6cb30ca](https://github.com/coldbox-modules/cbq/commit/6cb30caafd31186dcde785aba5d28e8b1fdce96f))
++ __\*:__ Apply cfformat changes
+ ([b9e1adc](https://github.com/coldbox-modules/cbq/commit/b9e1adc197fe3716054dc6e46abf0eeb89dc44c3))
++ __\*:__ feat: expose observational publish and worker attempt boundaries
+ ([ca5fcdc](https://github.com/coldbox-modules/cbq/commit/ca5fcdc478d3f9403ff445a6b13f65c406797a1e))
+
+
 # v7.0.0
 ## 09 Sep 2026 — 03:19:55 UTC
 
