@@ -23,8 +23,8 @@ component extends="testbox.system.BaseSpec" {
 					{
 						announce : function( state, data ) {
 							states.append( {
-								state : state,
-								id : data.executionId ?: ""
+								state  : state,
+								id  : data.executionId ?: ""
 							} );
 							if ( state == "onCBQJobExecutionStarted" ) {
 								throw( "ObserverFailure" );
