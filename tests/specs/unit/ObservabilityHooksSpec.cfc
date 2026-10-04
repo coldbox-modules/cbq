@@ -19,8 +19,8 @@ component extends="testbox.system.BaseSpec" {
 						},
 						warn : function( message, extraInfo ) {
 							diagnostics.append( {
-								message  : message,
-								exception  : extraInfo
+								message : message,
+								exception : extraInfo
 							} );
 						}
 					}
@@ -31,8 +31,8 @@ component extends="testbox.system.BaseSpec" {
 					{
 						announce : function( state, data ) {
 							states.append( {
-								state  : state,
-								id  : data.executionId ?: ""
+								state : state,
+								id : data.executionId ?: ""
 							} );
 							if ( state == "onCBQJobComplete" ) {
 								result = data.result;
