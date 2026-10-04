@@ -59,6 +59,13 @@ component accessors="true" extends="AbstractQueueProvider" {
 	}
 
 	public void function marshalJob( required AbstractJob job, required WorkerPool pool ) {
+		var observation = {
+			"job" : arguments.job,
+			"executionId" : createUUID(),
+			"attempt" : arguments.job.getCurrentAttempt()
+		};
+		announceExecutionObservation( "onCBQJobAttemptScheduled", observation );
+		announceExecutionObservation( "onCBQJobExecutionStarted", observation );
 		try {
 			if ( variables.log.canDebug() ) {
 				// variables.log.debug( "Marshaling job ###arguments.job.getId()#", arguments.job.getMemento() );
@@ -76,6 +83,9 @@ component accessors="true" extends="AbstractQueueProvider" {
 			}
 
 			var result = arguments.job.handle();
+			var completed = structCopy( observation );
+			completed.status = job.getIsReleased() ? "released" : "ok";
+			announceExecutionObservation( "onCBQJobAttemptFinished", completed );
 
 			if ( job.getIsReleased() ) {
 				variables.log.debug( "Job [#job.getId()#] requested manual release." );
@@ -117,6 +127,9 @@ component accessors="true" extends="AbstractQueueProvider" {
 
 			ensureSuccessfulBatchJobIsRecorded( job, pool );
 		} catch ( any e ) {
+			var failed = structCopy( observation );
+			failed.status = job.getIsCancelled() ? "cancelled" : "internal_error";
+			announceExecutionObservation( "onCBQJobAttemptFinished", failed );
 			// log failed job
 			if ( log.canError() ) {
 				log.error( "Exception when running job: #e.message#" );
@@ -152,6 +165,8 @@ component accessors="true" extends="AbstractQueueProvider" {
 
 				rethrow;
 			}
+		} finally {
+			announceExecutionObservation( "onCBQJobExecutionExited", observation );
 		}
 	}
 

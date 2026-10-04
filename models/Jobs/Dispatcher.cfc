@@ -22,11 +22,26 @@ component singleton accessors="true" {
 		);
 
 		arguments.job.setCurrentAttempt( 0 );
-		connection.push(
-			queueName = queueName,
-			job = arguments.job,
-			delay = delay,
-			attempts = 0
+		try {
+			connection.push(
+				queueName = queueName,
+				job = arguments.job,
+				delay = delay,
+				attempts = 0
+			);
+		} catch ( any failure ) {
+			announcePublishResult(
+				"onCBQJobPublishException",
+				arguments.job,
+				connection,
+				failure
+			);
+			rethrow;
+		}
+		announcePublishResult(
+			"onCBQJobPublished",
+			arguments.job,
+			connection
 		);
 
 		return this;
@@ -61,11 +76,11 @@ component singleton accessors="true" {
 				"attempts" : 0
 			};
 			if ( arguments.batchSize == 1 ) {
-				connection.push( argumentCollection = entry );
+				publishMany( connection, [ entry ] );
 			} else {
 				pending.append( entry );
 				if ( pending.len() == arguments.batchSize ) {
-					connection.pushMany( pending );
+					publishMany( connection, pending );
 					pending = [];
 				}
 			}
@@ -76,6 +91,52 @@ component singleton accessors="true" {
 		}
 
 		return this;
+	}
+
+	private function publishMany( required any connection, required array entries ) {
+		try {
+			if ( arguments.entries.len() == 1 ) {
+				arguments.connection.push( argumentCollection = arguments.entries[ 1 ] );
+			} else {
+				arguments.connection.pushMany( arguments.entries );
+			}
+		} catch ( any failure ) {
+			for ( var entry in arguments.entries ) {
+				announcePublishResult(
+					"onCBQJobPublishException",
+					entry.job,
+					arguments.connection,
+					failure
+				);
+			}
+			rethrow;
+		}
+		for ( var entry in arguments.entries ) {
+			announcePublishResult(
+				"onCBQJobPublished",
+				entry.job,
+				arguments.connection
+			);
+		}
+	}
+
+	private function announcePublishResult(
+		required string state,
+		required any job,
+		required any connection,
+		any exception
+	) {
+		try {
+			variables.interceptorService.announce(
+				arguments.state,
+				{
+					"job" : arguments.job,
+					"connection" : arguments.connection,
+					"exception" : arguments.exception ?: javacast( "null", "" )
+				}
+			);
+		} catch ( any observerFailure ) {
+		}
 	}
 
 }

@@ -5,7 +5,7 @@ component {
 	this.webUrl = "https://github.com/coldbox-modules/cbq";
 	this.cfmapping = "cbq";
 
-	variables.customInterceptionPointMethodNames = "onCBQJobAdded,onCBQJobMarshalled,onCBQJobComplete,onCBQJobException,onCBQJobFailed";
+	variables.customInterceptionPointMethodNames = "onCBQJobAdded,onCBQJobMarshalled,onCBQJobComplete,onCBQJobException,onCBQJobFailed,onCBQJobAttemptScheduled,onCBQJobAttemptFinished,onCBQJobExecutionStarted,onCBQJobExecutionExited,onCBQJobPublished,onCBQJobPublishException";
 
 	function configure() {
 		settings = {
