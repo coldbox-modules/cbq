@@ -1,3 +1,15 @@
+# v7.0.2
+## 04 Oct 2026 — 09:41:27 UTC
+
+### other
+
++ __\*:__ Merge pull request #40 from coldbox-modules/fix/observe-bulk-tail ([ac7beb7](https://github.com/coldbox-modules/cbq/commit/ac7beb749f07ce3afe4b8fbc438239bca952988d))
++ __\*:__ fix: preserve the provider bulk API for partial chunks
+ ([5a06ee8](https://github.com/coldbox-modules/cbq/commit/5a06ee872012f996e1fbf95e71846eb259e49c96))
++ __\*:__ fix: observe publication results for the final partial bulk chunk
+ ([0efe27e](https://github.com/coldbox-modules/cbq/commit/0efe27ee2d3ae8eb4d6096045c8fe63035fa8fec))
+
+
 # v7.0.1
 ## 04 Oct 2026 — 09:22:47 UTC
 
