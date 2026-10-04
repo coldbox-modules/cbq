@@ -98,12 +98,10 @@ jobs:
         uses: Ortus-Solutions/setup-commandbox@v2.0.1
 
       - name: Install CFFormat
-        run: box install commandbox-cfformat
+        # 0.22.1 adds whitespace before unquoted struct-key colons on every pass.
+        run: box install commandbox-cfformat@0.21.0
 
-      - name: Run CFFormat
-        run: box run-script format
-
-      - name: Commit Format Changes
-        uses: stefanzweifel/git-auto-commit-action@v5.2.0
-        with:
-          commit_message: Apply cfformat changes
+      - name: Check CFFormat
+        # Report changes for the author to apply locally; never create another
+        # workflow-triggering commit from the formatter job.
+        run: box run-script format:check

@@ -105,27 +105,43 @@ component accessors="true" {
 		function afterJobHook
 	) {
 		arguments.job.setCurrentAttempt( ( arguments.job.getCurrentAttempt() ?: 0 ) + 1 );
+		var observation = {
+			"job" : arguments.job,
+			"executionId" : createUUID(),
+			"attempt" : arguments.job.getCurrentAttempt()
+		};
+		announceExecutionObservation( "onCBQJobAttemptScheduled", observation );
 		return variables.async
 			.newFuture( function() {
-				if ( variables.log.canDebug() ) {
-					variables.log.debug( "Marshaling job ###job.getId()#", job.getMemento() );
+				announceExecutionObservation( "onCBQJobExecutionStarted", observation );
+				try {
+					if ( variables.log.canDebug() ) {
+						variables.log.debug( "Marshaling job ###job.getId()#", job.getMemento() );
+					}
+
+					beforeJobRun( job );
+					if ( structKeyExists( job, "before" ) ) {
+						job.before();
+					}
+
+					variables.interceptorService.announce( "onCBQJobMarshalled", { "job" : job } );
+
+					if ( variables.log.canDebug() ) {
+						variables.log.debug( "Running job ###job.getId()#", job.getMemento() );
+					}
+
+					// These paired hooks bracket the actual worker execution, including failures.
+					// Completion callbacks may run on a different thread.
+					return job.handle();
+				} finally {
+					announceExecutionObservation( "onCBQJobExecutionExited", observation );
 				}
-
-				beforeJobRun( job );
-				if ( structKeyExists( job, "before" ) ) {
-					job.before();
-				}
-
-				variables.interceptorService.announce( "onCBQJobMarshalled", { "job" : job } );
-
-				if ( variables.log.canDebug() ) {
-					variables.log.debug( "Running job ###job.getId()#", job.getMemento() );
-				}
-
-				return job.handle();
 			}, arguments.pool.getExecutor() )
 			.orTimeout( getTimeoutForJob( arguments.job, arguments.pool ), "seconds" )
 			.then( function( result ) {
+				var completed = structCopy( observation );
+				completed.status = job.getIsReleased() ? "released" : "ok";
+				announceExecutionObservation( "onCBQJobAttemptFinished", completed );
 				if ( job.getIsReleased() ) {
 					variables.log.debug( "Job [#job.getId()#] requested manual release." );
 
@@ -180,6 +196,11 @@ component accessors="true" {
 				}
 			} )
 			.onException( function( e ) {
+				var failed = structCopy( observation );
+				failed.status = job.getIsCancelled() ? "cancelled" : (
+					!isNull( e ) && findNoCase( "Timeout", e.toString() ) ? "deadline_exceeded" : "internal_error"
+				);
+				announceExecutionObservation( "onCBQJobAttemptFinished", failed );
 				try {
 					// log failed job
 					if ( !isNull( e ) && "java.util.concurrent.CompletionException" == e.getClass().getName() ) {
@@ -264,7 +285,12 @@ component accessors="true" {
 										"releaseException" : releaseException
 									}
 								);
-							} catch ( any ignored ) {
+							} catch ( any diagnosticFailure ) {
+								new cbq.models.Support.FailureDiagnostics().report(
+									"releaseJob diagnostic",
+									diagnosticFailure,
+									variables.log ?: javacast( "null", "" )
+								);
 							}
 							markJobFailed(
 								job,
@@ -293,11 +319,21 @@ component accessors="true" {
 								"handlerException" : outerException
 							}
 						);
-					} catch ( any ignored ) {
+					} catch ( any diagnosticFailure ) {
+						new cbq.models.Support.FailureDiagnostics().report(
+							"onException handler diagnostic",
+							diagnosticFailure,
+							variables.log ?: javacast( "null", "" )
+						);
 					}
 					try {
 						forceFailJob( job.getId(), pool, job );
-					} catch ( any ignored ) {
+					} catch ( any diagnosticFailure ) {
+						new cbq.models.Support.FailureDiagnostics().report(
+							"forceFailJob fallback",
+							diagnosticFailure,
+							variables.log ?: javacast( "null", "" )
+						);
 					}
 				}
 
@@ -409,7 +445,12 @@ component accessors="true" {
 					arguments.pool,
 					arguments.job
 				);
-			} catch ( any ignored ) {
+			} catch ( any diagnosticFailure ) {
+				new cbq.models.Support.FailureDiagnostics().report(
+					"afterJobFailed forceFailJob fallback",
+					diagnosticFailure,
+					variables.log ?: javacast( "null", "" )
+				);
 			}
 		}
 
@@ -439,7 +480,12 @@ component accessors="true" {
 					{ "exception" : arguments.exception }
 				);
 			}
-		} catch ( any ignored ) {
+		} catch ( any diagnosticFailure ) {
+			new cbq.models.Support.FailureDiagnostics().report(
+				"side effect diagnostic",
+				diagnosticFailure,
+				variables.log ?: javacast( "null", "" )
+			);
 		}
 	}
 
@@ -593,6 +639,18 @@ component accessors="true" {
 
 	public void function shutdown( boolean force = false, numeric timeout = 60 ) {
 		return;
+	}
+
+	function announceExecutionObservation( required string state, required struct data ) {
+		try {
+			variables.interceptorService.announce( arguments.state, arguments.data );
+		} catch ( any observerFailure ) {
+			new cbq.models.Support.FailureDiagnostics().report(
+				arguments.state,
+				observerFailure,
+				variables.log ?: javacast( "null", "" )
+			);
+		}
 	}
 
 }
