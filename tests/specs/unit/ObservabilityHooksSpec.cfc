@@ -405,14 +405,11 @@ component extends="testbox.system.BaseSpec" {
 			getDefaultQueue : () => "synthetic",
 			pushMany : function( entries ) {
 				for ( var entry in entries ) {
+					if ( rejectTail && entry.job.getId() == "tail" ) {
+						throw( type = "EnqueueFailure", message = "final chunk failed" );
+					}
 					published.append( entry.job.getId() );
 				}
-			},
-			push : function( job ) {
-				if ( rejectTail ) {
-					throw( type = "EnqueueFailure", message = "final chunk failed" );
-				}
-				published.append( job.getId() );
 			}
 		};
 		dispatcher.$property(

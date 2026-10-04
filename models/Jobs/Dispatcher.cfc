@@ -88,15 +88,19 @@ component singleton accessors="true" {
 		}
 
 		if ( pending.len() ) {
-			publishMany( connection, pending );
+			publishMany( connection, pending, true );
 		}
 
 		return this;
 	}
 
-	private function publishMany( required any connection, required array entries ) {
+	private function publishMany(
+		required any connection,
+		required array entries,
+		boolean bulk = false
+	) {
 		try {
-			if ( arguments.entries.len() == 1 ) {
+			if ( !arguments.bulk && arguments.entries.len() == 1 ) {
 				arguments.connection.push( argumentCollection = arguments.entries[ 1 ] );
 			} else {
 				arguments.connection.pushMany( arguments.entries );
