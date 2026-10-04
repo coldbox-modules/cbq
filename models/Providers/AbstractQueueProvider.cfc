@@ -285,7 +285,12 @@ component accessors="true" {
 										"releaseException" : releaseException
 									}
 								);
-							} catch ( any ignored ) {
+							} catch ( any diagnosticFailure ) {
+								new cbq.models.Support.FailureDiagnostics().report(
+									"releaseJob diagnostic",
+									diagnosticFailure,
+									variables.log ?: javacast( "null", "" )
+								);
 							}
 							markJobFailed(
 								job,
@@ -314,11 +319,21 @@ component accessors="true" {
 								"handlerException" : outerException
 							}
 						);
-					} catch ( any ignored ) {
+					} catch ( any diagnosticFailure ) {
+						new cbq.models.Support.FailureDiagnostics().report(
+							"onException handler diagnostic",
+							diagnosticFailure,
+							variables.log ?: javacast( "null", "" )
+						);
 					}
 					try {
 						forceFailJob( job.getId(), pool, job );
-					} catch ( any ignored ) {
+					} catch ( any diagnosticFailure ) {
+						new cbq.models.Support.FailureDiagnostics().report(
+							"forceFailJob fallback",
+							diagnosticFailure,
+							variables.log ?: javacast( "null", "" )
+						);
 					}
 				}
 
@@ -430,7 +445,12 @@ component accessors="true" {
 					arguments.pool,
 					arguments.job
 				);
-			} catch ( any ignored ) {
+			} catch ( any diagnosticFailure ) {
+				new cbq.models.Support.FailureDiagnostics().report(
+					"afterJobFailed forceFailJob fallback",
+					diagnosticFailure,
+					variables.log ?: javacast( "null", "" )
+				);
 			}
 		}
 
@@ -460,7 +480,12 @@ component accessors="true" {
 					{ "exception" : arguments.exception }
 				);
 			}
-		} catch ( any ignored ) {
+		} catch ( any diagnosticFailure ) {
+			new cbq.models.Support.FailureDiagnostics().report(
+				"side effect diagnostic",
+				diagnosticFailure,
+				variables.log ?: javacast( "null", "" )
+			);
 		}
 	}
 
@@ -620,6 +645,11 @@ component accessors="true" {
 		try {
 			variables.interceptorService.announce( arguments.state, arguments.data );
 		} catch ( any observerFailure ) {
+			new cbq.models.Support.FailureDiagnostics().report(
+				arguments.state,
+				observerFailure,
+				variables.log ?: javacast( "null", "" )
+			);
 		}
 	}
 

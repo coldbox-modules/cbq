@@ -2,6 +2,7 @@ component singleton accessors="true" {
 
 	property name="interceptorService" inject="box:interceptorService";
 	property name="config" inject="Config@cbq";
+	property name="log" inject="logbox:logger:{this}";
 
 	public Dispatcher function dispatch( required any job ) {
 		var connectionName = arguments.job.getConnection();
@@ -136,6 +137,11 @@ component singleton accessors="true" {
 				}
 			);
 		} catch ( any observerFailure ) {
+			new cbq.models.Support.FailureDiagnostics().report(
+				arguments.state,
+				observerFailure,
+				variables.log ?: javacast( "null", "" )
+			);
 		}
 	}
 
