@@ -143,7 +143,11 @@ component extends="testbox.system.BaseSpec" {
 							createObject( "java", "java.util.concurrent.TimeUnit" ).SECONDS
 						)
 					).toBeTrue();
-					var observations = states.toArray();
+					// Java arrays do not expose CFML array member functions on every engine.
+					var observations = [];
+					for ( var observation in states.toArray() ) {
+						observations.append( observation );
+					}
 					expect( observations.map( ( entry ) => entry.state ).find( "onCBQJobAttemptFinished" ) ).toBeLT(
 						observations.map( ( entry ) => entry.state ).find( "onCBQJobExecutionExited" )
 					);

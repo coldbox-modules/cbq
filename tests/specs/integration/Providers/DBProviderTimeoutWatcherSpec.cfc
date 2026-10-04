@@ -154,8 +154,21 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 				return [];
 			}
 		);
-		prepareMock( variables.provider ).$( "newQuery", builder );
-		variables.provider.fetchPotentiallyOpenRecords( capacity = 10, pool = variables.pool );
+		// Keep the compile-only builder off the application provider used by teardown.
+		var compilationProvider = createMock( "cbq.models.Providers.DBProvider" ).setProperties( {} );
+		compilationProvider.$property(
+			"javaInstant",
+			"variables",
+			createObject( "java", "java.time.Instant" )
+		);
+		compilationProvider.$property(
+			"log",
+			"variables",
+			{ canDebug : () => false }
+		);
+		compilationProvider.$( "newQuery", builder );
+		makePublic( compilationProvider, "fetchPotentiallyOpenRecords" );
+		compilationProvider.fetchPotentiallyOpenRecords( capacity = 10, pool = variables.pool );
 
 		var sql = builder.toSQL();
 		expect( sql ).toInclude( "CASE WHEN #arguments.quotedColumn# = ? THEN 1 ELSE 2 END ASC" );
