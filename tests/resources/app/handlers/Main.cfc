@@ -15,19 +15,19 @@ component extends="coldbox.system.EventHandler" {
 		return [
 			{
 				"id" : createUUID(),
-				name     : "Luis"
+				name      : "Luis"
 			},
 			{
 				"id" : createUUID(),
-				name     : "JOe"
+				name      : "JOe"
 			},
 			{
 				"id" : createUUID(),
-				name     : "Bob"
+				name      : "Bob"
 			},
 			{
 				"id" : createUUID(),
-				name     : "Darth"
+				name      : "Darth"
 			}
 		];
 	}
