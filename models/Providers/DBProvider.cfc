@@ -9,12 +9,21 @@ component accessors="true" extends="AbstractQueueProvider" {
 
 	variables.uniqueID = createUUID();
 	variables.currentExecutorCount = 0;
+	variables.bulkInsertBatchSize = 100;
+	variables.largeBulkValidated = false;
 
 	function onDIComplete() {
 		variables.log.debug( "Creating new DB Provider for cbq: #variables.uniqueID#" );
 	}
 
 	public DBProvider function setProperties( required struct properties ) {
+		var bulkSize = arguments.properties.keyExists( "bulkInsertBatchSize" ) ? arguments.properties.bulkInsertBatchSize : 100;
+		if ( !isSimpleValue( bulkSize ) || !isValid( "integer", bulkSize ) || bulkSize < 1 || bulkSize > 1000 ) {
+			throw(
+				type = "cbq.DBProvider.InvalidBulkInsertBatchSize",
+				message = "bulkInsertBatchSize must be an integer between 1 and 1000."
+			);
+		}
 		var pollInterval = arguments.properties.keyExists( "pollIntervalMilliseconds" ) ? arguments.properties.pollIntervalMilliseconds : 5000;
 		if ( !isSimpleValue( pollInterval ) || !isValid( "integer", pollInterval ) || pollInterval <= 0 ) {
 			throw(
@@ -23,6 +32,8 @@ component accessors="true" extends="AbstractQueueProvider" {
 			);
 		}
 		variables.pollIntervalMilliseconds = pollInterval;
+		variables.bulkInsertBatchSize = bulkSize;
+		variables.largeBulkValidated = false;
 		variables.properties = arguments.properties;
 		variables.tableName = variables.properties.keyExists( "tableName" ) ? variables.properties.tableName : "cbq_jobs";
 		variables.defaultQueryOptions = variables.properties.keyExists( "queryOptions" ) ? variables.properties.queryOptions : {};
@@ -30,6 +41,48 @@ component accessors="true" extends="AbstractQueueProvider" {
 			variables.defaultQueryOptions[ "datasource" ] = variables.properties.datasource;
 		}
 		return this;
+	}
+
+	/** PostgreSQL opt-in; five parameters per row exceed other engines' safe limits. */
+	public numeric function getMaxBulkDispatchBatchSize() {
+		if ( variables.bulkInsertBatchSize > 100 && !variables.largeBulkValidated ) {
+			var grammar = newQuery().getGrammar();
+			if ( structKeyExists( grammar, "getResolvedGrammar" ) ) {
+				grammar = grammar.getResolvedGrammar();
+			}
+			// BoxLang may load the same stock source through a physical module alias.
+			var grammarMetadata = getMetadata( grammar );
+			var sameSource = structKeyExists( grammarMetadata, "path" ) &&
+			compare(
+				createObject( "java", "java.io.File" ).init( grammarMetadata.path ).getCanonicalPath(),
+				createObject( "java", "java.io.File" )
+					.init( expandPath( "/qb/models/Grammars/PostgresGrammar.cfc" ) )
+					.getCanonicalPath()
+			) == 0;
+			if ( !isInstanceOf( grammar, "qb.models.Grammars.PostgresGrammar" ) && !sameSource ) {
+				throw(
+					type = "cbq.DBProvider.UnsupportedBulkInsertBatchSize",
+					message = "bulkInsertBatchSize above 100 requires PostgreSQL."
+				);
+			}
+			if ( variables.defaultQueryOptions.keyExists( "datasource" ) ) {
+				cfdbinfo(
+					type = "Version",
+					name = "local.databaseInfo",
+					datasource = variables.defaultQueryOptions.datasource
+				);
+			} else {
+				cfdbinfo( type = "Version", name = "local.databaseInfo" );
+			}
+			if ( databaseInfo.DATABASE_PRODUCTNAME[ 1 ] != "PostgreSQL" ) {
+				throw(
+					type = "cbq.DBProvider.UnsupportedBulkInsertBatchSize",
+					message = "bulkInsertBatchSize above 100 requires a PostgreSQL datasource."
+				);
+			}
+			variables.largeBulkValidated = true;
+		}
+		return variables.bulkInsertBatchSize;
 	}
 
 	public any function listen( required WorkerPool pool ) {
@@ -220,11 +273,12 @@ component accessors="true" extends="AbstractQueueProvider" {
 
 	/** Each job remains a separate row; the caller owns transaction boundaries. */
 	public any function pushMany( required array entries ) {
+		var batchSize = getMaxBulkDispatchBatchSize();
 		var rows = [];
 		for ( var entry in arguments.entries ) {
 			rows.append( buildJobPayload( argumentCollection = entry ) );
-			// Five bindings per row; stay below SQL Server parameter/row limits.
-			if ( rows.len() == 100 ) {
+			// The default stays below SQL Server/SQLite limits; larger batches require PostgreSQL.
+			if ( rows.len() == batchSize ) {
 				newQuery().table( variables.tableName ).insert( rows, variables.defaultQueryOptions );
 				rows = [];
 			}
@@ -248,7 +302,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 			},
 			"attempts" : {
 				"value" : arguments.attempts,
-				"sqltype" : "bigint"
+				"cfsqltype" : "bigint"
 			},
 			"availableDate" : getCurrentUnixTimestamp( arguments.delay ),
 			"createdDate" : getCurrentUnixTimestamp(),
