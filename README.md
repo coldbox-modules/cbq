@@ -283,7 +283,7 @@ To dispatch the chain, you must call `dispatch` on the returned Job.
 
 ## Opt-in database enqueue batches
 
-`Dispatcher@cbq.bulkDispatch` accepts `batchSize` from 1 to 100. The default is 1 and preserves the existing order: announce `onCBQJobAdded`, reset the job's attempt, then push that job before announcing the next.
+`Dispatcher@cbq.bulkDispatch` accepts `batchSize` from 1 to the connection's supported limit (normally 100). The default is 1 and preserves the existing order: announce `onCBQJobAdded`, reset the job's attempt, then push that job before announcing the next.
 
 ```cfc
 transaction {
@@ -297,6 +297,18 @@ transaction {
 ```
 
 With a larger batch size, each job is still announced separately and becomes its own queue row, with its own payload and lifecycle. Events for one chunk run before that chunk is persisted. Choose the default if a job-added interceptor needs to read earlier jobs from the same chunk. An explicit queue overrides job queues as before; otherwise each job keeps its effective queue. As with existing `bulkDispatch`, this does not use each job's backoff as an initial delay.
+
+PostgreSQL database connections may explicitly set `bulkInsertBatchSize` to an integer from 1 to 1000 in their provider properties. The default remains 100. Values above 100 require both a resolved PostgreSQL grammar and a PostgreSQL datasource; they are rejected before any job-added hooks or inserts. This validation is cached for that provider configuration and resets on `setProperties`. Native persistence uses the configured chunk size, including direct `pushMany` calls. Each row still has five bound parameters, so the 1000-row opt-in stays below PostgreSQL's parameter limit. Other database grammars retain the 100-row limit.
+
+```cfml
+newConnection( "default" )
+    .setProvider( "DBProvider@cbq" )
+    .setProperties( { "bulkInsertBatchSize": 1000 } );
+// Request larger dispatcher chunks explicitly; setting the provider does not change its default of 1.
+getInstance( "Dispatcher@cbq" ).bulkDispatch( jobs = jobs, batchSize = 1000 );
+```
+
+`QueueConnection.getMaxBulkDispatchBatchSize()` returns the provider's optional capability or 100 for existing custom providers. A custom provider may explicitly implement that method to advertise a supported limit up to 1000. Inherited native DB persistence retains its validated PostgreSQL capability, including subclasses that only customize worker listening. The caller continues to own transaction boundaries; use a transaction when earlier chunks must roll back after a later failure. Job-added and publication result hooks still run once for every job.
 
 The DB provider writes at most 100 rows (500 bindings) per insert. Other providers continue through their ordinary `push` implementation unless they implement `pushMany(entries)`. Entries contain the ordinary `push` arguments: `queueName`, `job`, and optionally `delay` and `attempts`. `DBProvider.pushMany` also bounds direct calls to 100 rows per insert. It uses the configured table, query options and datasource.
 

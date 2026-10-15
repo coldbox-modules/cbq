@@ -54,11 +54,22 @@ component singleton accessors="true" {
 		string queueName,
 		numeric batchSize = 1
 	) {
-		if ( !isValid( "integer", arguments.batchSize ) || arguments.batchSize < 1 || arguments.batchSize > 100 ) {
-			throw( type = "cbq.InvalidDispatchBatchSize", message = "batchSize must be an integer between 1 and 100." );
+		if ( !isValid( "integer", arguments.batchSize ) || arguments.batchSize < 1 || arguments.batchSize > 1000 ) {
+			throw(
+				type = "cbq.InvalidDispatchBatchSize",
+				message = "batchSize must be an integer between 1 and 1000, within the connection's supported limit."
+			);
 		}
 		param arguments.connectionName = variables.config.getDefaultConnectionName();
 		var connection = variables.config.getConnection( connectionName );
+		// Larger batches require an explicit provider capability, before any job hooks run.
+		var maximum = structKeyExists( connection, "getMaxBulkDispatchBatchSize" ) ? connection.getMaxBulkDispatchBatchSize() : 100;
+		if ( !isValid( "integer", maximum ) || maximum < 1 || maximum > 1000 || arguments.batchSize > maximum ) {
+			throw(
+				type = "cbq.InvalidDispatchBatchSize",
+				message = "batchSize exceeds this connection's supported bulk dispatch limit."
+			);
+		}
 
 		var pending = [];
 		for ( var job in arguments.jobs ) {

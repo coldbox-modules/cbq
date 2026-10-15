@@ -15,6 +15,12 @@ component accessors="true" {
 	}
 
 	/** Opt-in batching; existing custom providers retain their normal push method. */
+	public numeric function getMaxBulkDispatchBatchSize() {
+		var provider = getProvider();
+		return structKeyExists( provider, "getMaxBulkDispatchBatchSize" ) ? provider.getMaxBulkDispatchBatchSize() : 100;
+	}
+
+	/** Opt-in batching; existing custom providers retain their normal push method. */
 	public QueueConnection function pushMany( required array entries ) {
 		var provider = getProvider();
 		if ( structKeyExists( provider, "pushMany" ) ) {
