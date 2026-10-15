@@ -34,6 +34,7 @@ component accessors="true" extends="AbstractQueueProvider" {
 		variables.pollIntervalMilliseconds = pollInterval;
 		variables.bulkInsertBatchSize = bulkSize;
 		variables.largeBulkValidated = false;
+		variables.bulkSourcePaths = {};
 		variables.properties = arguments.properties;
 		variables.tableName = variables.properties.keyExists( "tableName" ) ? variables.properties.tableName : "cbq_jobs";
 		variables.defaultQueryOptions = variables.properties.keyExists( "queryOptions" ) ? variables.properties.queryOptions : {};
@@ -279,14 +280,210 @@ component accessors="true" extends="AbstractQueueProvider" {
 			rows.append( buildJobPayload( argumentCollection = entry ) );
 			// The default stays below SQL Server/SQLite limits; larger batches require PostgreSQL.
 			if ( rows.len() == batchSize ) {
-				newQuery().table( variables.tableName ).insert( rows, variables.defaultQueryOptions );
+				insertBulkRows( rows );
 				rows = [];
 			}
 		}
 		if ( rows.len() ) {
-			newQuery().table( variables.tableName ).insert( rows, variables.defaultQueryOptions );
+			insertBulkRows( rows );
 		}
 		return this;
+	}
+
+	/** Only the explicit PostgreSQL opt-in may avoid per-cell binding compilation. */
+	private void function insertBulkRows( required array rows ) {
+		var query = newQuery().table( variables.tableName );
+		if ( variables.bulkInsertBatchSize > 100 && supportsRecordsetInsert( query ) ) {
+			var packed = [];
+			var integerChecks = {};
+			for ( var row in arguments.rows ) {
+				if (
+					!isStruct( row.queue ) || !isStruct( row.payload ) || !isStruct( row.attempts ) ||
+					( row.queue.null ?: false ) || ( row.payload.null ?: false ) || ( row.attempts.null ?: false ) ||
+					isNull( row.queue.value ) || isNull( row.payload.value ) || isNull( row.attempts.value ) || isNull(
+						row.availableDate
+					) || isNull( row.createdDate ) ||
+					!variables.bulkStringClass.isInstance( row.queue.value ) || !variables.bulkStringClass.isInstance(
+						row.payload.value
+					) ||
+					!isWholeBigint( row.attempts.value, integerChecks ) || !isWholeBigint(
+						row.availableDate,
+						integerChecks
+					) || !isWholeBigint( row.createdDate, integerChecks )
+				) {
+					query.insert( arguments.rows, variables.defaultQueryOptions );
+					return;
+				}
+				packed.append( {
+					"ordinal" : packed.len() + 1,
+					"queue" : row.queue.value,
+					"attempts" : toString( row.attempts.value ),
+					"availableDate" : toString( row.availableDate ),
+					"createdDate" : toString( row.createdDate ),
+					"payload" : row.payload.value
+				} );
+			}
+			var encoded = serializeJSON( packed );
+			if ( len( encoded ) <= 8388608 && len( charsetDecode( encoded, "UTF-8" ) ) <= 8388608 ) {
+				var source = query
+					.newQuery()
+					.fromRaw(
+						'JSONB_TO_RECORDSET(CAST(? AS JSONB)) AS cbq_input(ordinal BIGINT,queue TEXT,attempts BIGINT,"availableDate" BIGINT,"createdDate" BIGINT,payload TEXT)',
+						[
+							{
+								"value" : encoded,
+								"cfsqltype" : "varchar",
+								"null" : false,
+								"list" : false
+							}
+						]
+					)
+					.select( [
+						"queue",
+						"attempts",
+						"availableDate",
+						"createdDate",
+						"payload"
+					] )
+					.orderBy( "ordinal" );
+				query.insertUsing(
+					source = source,
+					columns = [
+						"queue",
+						"attempts",
+						"availableDate",
+						"createdDate",
+						"payload"
+					],
+					options = variables.defaultQueryOptions
+				);
+				return;
+			}
+		}
+		query.insert( arguments.rows, variables.defaultQueryOptions );
+	}
+
+	private boolean function isWholeBigint( required any value, required struct checked ) {
+		if ( !isSimpleValue( arguments.value ) ) {
+			return false;
+		}
+		var text = toString( arguments.value );
+		if ( structKeyExists( arguments.checked, text ) ) {
+			return arguments.checked[ text ];
+		}
+		if ( !reFind( "^-?[0-9]{1,19}$", text ) ) {
+			arguments.checked[ text ] = false;
+			return false;
+		}
+		var negative = left( text, 1 ) == "-";
+		var magnitude = negative ? mid( text, 2, len( text ) ) : text;
+		arguments.checked[ text ] = len( magnitude ) < 19 || compare(
+			magnitude,
+			negative ? "9223372036854775808" : "9223372036854775807"
+		) <= 0;
+		return arguments.checked[ text ];
+	}
+
+	/** Source identity rejects custom subclasses; the public builder still owns compilation and execution. */
+	private boolean function supportsRecordsetInsert( required any query ) {
+		if ( !sameBulkSource( arguments.query, "qb.models.Query.QueryBuilder" ) ) {
+			return false;
+		}
+		var grammar = arguments.query.getGrammar();
+		if ( structKeyExists( grammar, "getResolvedGrammar" ) ) {
+			grammar = grammar.getResolvedGrammar();
+		}
+		if (
+			!sameBulkSource( grammar, "qb.models.Grammars.PostgresGrammar" ) || !sameBulkSource(
+				arguments.query.getUtils(),
+				"qb.models.Query.QueryUtils"
+			)
+		) {
+			return false;
+		}
+		var formatter = arguments.query.getColumnFormatter();
+		if ( isNull( formatter ) || !isCustomFunction( formatter ) || isClosure( formatter ) ) {
+			return false;
+		}
+		var metadata = getMetadata( formatter );
+		if (
+			compareNoCase( metadata.name ?: "", "identityColumnFormatter" ) != 0 || compareNoCase(
+				metadata.access ?: "",
+				"private"
+			) != 0
+		) {
+			return false;
+		}
+		if ( !sameBulkSource( formatter, "qb.models.Query.QueryBuilder" ) ) {
+			return false;
+		}
+		if ( !structKeyExists( variables, "bulkStringClass" ) ) {
+			variables.bulkStringClass = createObject( "java", "java.lang.Class" ).forName( "java.lang.String" );
+		}
+		return true;
+	}
+
+	private boolean function sameBulkSource( required any instance, required string mapping ) {
+		var path = "";
+		if ( structKeyExists( server, "boxlang" ) ) {
+			try {
+				if ( !structKeyExists( variables, "bulkRunnablePath" ) ) {
+					variables.bulkRunnableClass = createObject( "java", "java.lang.Class" ).forName( "ortus.boxlang.runtime.runnables.IBoxRunnable" );
+					variables.bulkRunnablePath = variables.bulkRunnableClass.getMethod(
+						"getRunnablePath",
+						javacast( "java.lang.Class[]", [] )
+					);
+				}
+				if ( variables.bulkRunnableClass.isInstance( arguments.instance ) ) {
+					path = variables.bulkRunnablePath
+						.invoke( arguments.instance, javacast( "java.lang.Object[]", [] ) )
+						.absolutePath()
+						.toString();
+				}
+			} catch ( any unavailableNativePath ) {
+				// Portable engines and older kernels keep their metadata source-path check.
+			}
+		}
+		if ( !len( path ) ) {
+			if ( structKeyExists( server, "lucee" ) && isCustomFunction( arguments.instance ) ) {
+				try {
+					if ( !structKeyExists( variables, "bulkUDFPageSource" ) ) {
+						variables.bulkUDFClass = createObject( "java", "java.lang.Class" ).forName( "lucee.runtime.type.UDF" );
+						variables.bulkUDFPageSource = variables.bulkUDFClass.getMethod(
+							"getPageSource",
+							javacast( "java.lang.Class[]", [] )
+						);
+					}
+					if ( variables.bulkUDFClass.isInstance( arguments.instance ) ) {
+						path = variables.bulkUDFPageSource
+							.invoke( arguments.instance, javacast( "java.lang.Object[]", [] ) )
+							.getPhyscalFile()
+							.getCanonicalPath();
+					}
+				} catch ( any unavailableFunctionSource ) {
+					// An unprovable formatter source retains the typed insert path.
+				}
+			}
+		}
+		if ( !len( path ) ) {
+			path = getMetadata( arguments.instance ).path ?: "";
+		}
+		if ( !len( path ) ) {
+			return false;
+		}
+		if ( !structKeyExists( variables.bulkSourcePaths, arguments.mapping ) ) {
+			var expected = expandPath( "/" & replace( arguments.mapping, ".", "/", "all" ) & ".cfc" );
+			if ( !fileExists( expected ) ) {
+				return false;
+			}
+			variables.bulkSourcePaths[ arguments.mapping ] = createObject( "java", "java.io.File" )
+				.init( expected )
+				.getCanonicalPath();
+		}
+		return compare(
+			createObject( "java", "java.io.File" ).init( path ).getCanonicalPath(),
+			variables.bulkSourcePaths[ arguments.mapping ]
+		) == 0;
 	}
 
 	private struct function buildJobPayload(
