@@ -8,11 +8,20 @@ component extends="testbox.system.BaseSpec" {
 			body = function() {
 				beforeEach( function() {
 					variables.queue = "bulk-capacity-" & createUUID();
-					variables.counter = { "rows" : [] };
+					variables.counter = {
+						"rows" : [],
+						"bindings" : [],
+						"json" : []
+					};
 					variables.grammar = new qb.models.Grammars.PostgresGrammar().setInterceptorService(
 						new tests.resources.BulkInsertObserver().setCounter( variables.counter )
 					);
 					variables.provider = freshProvider();
+					var formatter = new qb.models.Query.QueryBuilder().getColumnFormatter();
+					variables.recordset = !isClosure( formatter ) && compareNoCase(
+						getMetadata( formatter ).name ?: "",
+						"identityColumnFormatter"
+					) == 0;
 				} );
 				aroundEach( function( spec ) {
 					transaction {
@@ -27,11 +36,19 @@ component extends="testbox.system.BaseSpec" {
 					for ( var total in [ 1001, 2005 ] ) {
 						variables.queue = "bulk-capacity-" & createUUID();
 						variables.counter.rows = [];
+						variables.counter.bindings = [];
+						variables.counter.json = [];
 						var entries = makeEntries( total );
 						var before = variables.provider.getCurrentUnixTimestamp();
 						variables.provider.pushMany( entries );
 						var after = variables.provider.getCurrentUnixTimestamp();
 						expect( variables.counter.rows ).toBe( total == 1001 ? [ 1000, 1 ] : [ 1000, 1000, 5 ] );
+						expect( variables.counter.bindings ).toBe(
+							variables.recordset ? ( total == 1001 ? [ 1, 1 ] : [ 1, 1, 1 ] ) : (
+								total == 1001 ? [ 5000, 5 ] : [ 5000, 5000, 25 ]
+							)
+						);
+						expect( variables.counter.json.every( ( value ) => value == variables.recordset ) ).toBeTrue();
 						var rows = queryRows();
 						expect( rows.len() ).toBe( total );
 						for ( var index = 1; index <= total; index++ ) {
@@ -74,6 +91,7 @@ component extends="testbox.system.BaseSpec" {
 					expect( variables.provider.getMaxBulkDispatchBatchSize() ).toBe( 100 );
 					variables.provider.pushMany( makeEntries( 205 ) );
 					expect( variables.counter.rows ).toBe( [ 100, 100, 5 ] );
+					expect( variables.counter.bindings ).toBe( [ 500, 500, 25 ] );
 					expect( queryRows().len() ).toBe( 205 );
 				} );
 				it( "validates once per configuration and retains inherited capability for custom watchers", function() {
@@ -85,6 +103,135 @@ component extends="testbox.system.BaseSpec" {
 					variables.provider.setProperties( { "bulkInsertBatchSize" : 1000 } );
 					expect( variables.provider.getMaxBulkDispatchBatchSize() ).toBe( 1000 );
 					expect( variables.queryCalls ).toBe( 2 );
+				} );
+				it( "retains native typed inserts for a custom builder, utilities, or formatter", function() {
+					for ( var custom in [ "builder", "utils", "formatter" ] ) {
+						variables.counter.rows = [];
+						variables.counter.bindings = [];
+						variables.counter.json = [];
+						variables.provider
+							.$( "newQuery" )
+							.$callback( function() {
+								var query = custom == "builder" ? new tests.resources.BulkCustomQueryBuilder(
+									grammar = variables.grammar
+								) : new qb.models.Query.QueryBuilder( grammar = variables.grammar );
+								if ( custom == "utils" ) {
+									query.setUtils( new tests.resources.BulkCustomQueryUtils() );
+								}
+								if ( custom == "formatter" ) {
+									query.setColumnFormatter( ( column ) => column );
+								}
+								return query;
+							} );
+						variables.provider.pushMany( makeEntries( 2 ) );
+						expect( variables.counter.bindings ).toBe( [ 10 ] );
+						expect( variables.counter.json ).toBe( [ false ] );
+					}
+				} );
+				it( "rejects a same-named private custom formatter from the stock shortcut", function() {
+					variables.provider
+						.$( "newQuery" )
+						.$callback( function() {
+							return new qb.models.Query.QueryBuilder( grammar = variables.grammar ).setColumnFormatter(
+								new tests.resources.BulkSpoofFormatter().formatter()
+							);
+						} );
+					expect( queryRows() ).toBeEmpty();
+					transaction action="setsavepoint" savepoint="spoof_formatter";
+					var failed = false;
+					try {
+						variables.provider.pushMany( makeEntries( 2 ) );
+					} catch ( any failure ) {
+						failed = true;
+						transaction action="rollback" savepoint="spoof_formatter";
+					}
+					expect( failed ).toBeTrue();
+					expect( variables.counter.json ).toBe( [ false ] );
+					expect( variables.counter.bindings ).toBe( [ 10 ] );
+					expect( queryRows() ).toBeEmpty();
+				} );
+				it( "preserves scalar JDBC coercion for fractional attempts and delays", function() {
+					variables.provider
+						.$( "getCurrentUnixTimestamp" )
+						.$callback( function( delay = 0 ) {
+							return 1700000000 + delay;
+						} );
+					var entries = makeEntries( 1 );
+					entries[ 1 ].attempts = 1.5;
+					entries[ 1 ].delay = 17.5;
+					expect( queryRows() ).toBeEmpty();
+					transaction action="setsavepoint" savepoint="fractional_native";
+					var scalarError = "";
+					var bulkError = "";
+					try {
+						variables.provider.push( argumentCollection = entries[ 1 ] );
+					} catch ( any failure ) {
+						scalarError = failure.type & ":" & failure.message;
+						transaction action="rollback" savepoint="fractional_native";
+					}
+					try {
+						variables.provider.pushMany( entries );
+					} catch ( any failure ) {
+						bulkError = failure.type & ":" & failure.message;
+						transaction action="rollback" savepoint="fractional_native";
+					}
+					expect( bulkError ).toBe( scalarError );
+					var rows = queryRows();
+					if ( len( scalarError ) ) {
+						expect( rows ).toBeEmpty();
+					} else {
+						expect( rows.len() ).toBe( 2 );
+						for (
+							var field in [
+								"attempts",
+								"createdDate",
+								"availableDate",
+								"payload"
+							]
+						) {
+							expect( rows[ 2 ][ field ] ).toBe( rows[ 1 ][ field ] );
+						}
+					}
+					expect( variables.counter.json ).toBe( [ false, false ] );
+					expect( variables.counter.bindings ).toBe( [ 5, 5 ] );
+				} );
+				it( "falls back for SQL nulls and JSON batches above the 8MiB UTF8 bound", function() {
+					makePublic( variables.provider, "insertBulkRows" );
+					var large = repeatString( "é", 2200000 );
+					var entries = makeEntries( 2 );
+					for ( var entry in entries ) {
+						entry.job.setProperties( { "text" : large } );
+					}
+					variables.provider.pushMany( entries );
+					expect( queryRows().len() ).toBe( 2 );
+					expect( variables.counter.json ).toBe( [ false ] );
+					expect( variables.counter.bindings ).toBe( [ 10 ] );
+					var failed = false;
+					transaction action="setsavepoint" savepoint="null_binding";
+					try {
+						variables.provider.insertBulkRows( [
+							{
+								"queue" : {
+									"value" : "",
+									"cfsqltype" : "varchar",
+									"null" : true
+								},
+								"payload" : {
+									"value" : "{}",
+									"cfsqltype" : "varchar"
+								},
+								"attempts" : { "value" : 0, "cfsqltype" : "bigint" },
+								"createdDate" : 1700000000,
+								"availableDate" : 1700000000
+							}
+						] );
+					} catch ( any failure ) {
+						failed = true;
+						transaction action="rollback" savepoint="null_binding";
+					}
+					expect( failed ).toBeTrue();
+					expect( variables.counter.json ).toBe( [ false, false ] );
+					expect( queryRows().len() ).toBe( 2 );
 				} );
 			},
 			skip = databaseInfo.DATABASE_PRODUCTNAME[ 1 ] != "PostgreSQL"

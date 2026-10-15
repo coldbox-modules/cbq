@@ -9,7 +9,12 @@ component accessors="true" {
     }
     private void function record( required string state, required struct data ) {
         if ( compareNoCase( arguments.state, "preQBExecute" ) == 0 && reFindNoCase( "^\s*INSERT\b", arguments.data.sql ) ) {
-            variables.counter.rows.append( arguments.data.bindings.len() / 5 );
+            var recordset = findNoCase( "JSONB_TO_RECORDSET", arguments.data.sql ) > 0;
+            variables.counter.rows.append( recordset ? deserializeJSON( arguments.data.bindings[ 1 ].value ).len() : arguments.data.bindings.len() / 5 );
+            if ( structKeyExists( variables.counter, "bindings" ) ) {
+                variables.counter.bindings.append( arguments.data.bindings.len() );
+                variables.counter.json.append( recordset );
+            }
         }
     }
 }
