@@ -33,19 +33,19 @@ component {
 			.whereNull( "completedDate" )
 			.whereNull( "failedDate" )
 			.selectRaw(
-				"COALESCE(SUM(CASE WHEN " & unclaimed & " AND " & available & " <= ? THEN 1 ELSE 0 END),0) AS runnable",
+				"COALESCE(SUM(CASE WHEN " & unclaimed & " AND " & available & " <= ? THEN 1 ELSE 0 END),0) AS " & grammar.wrapValue( "runnable" ),
 				[ now ]
 			)
 			.selectRaw(
-				"COALESCE(SUM(CASE WHEN " & unclaimed & " AND " & available & " > ? THEN 1 ELSE 0 END),0) AS delayed",
+				"COALESCE(SUM(CASE WHEN " & unclaimed & " AND " & available & " > ? THEN 1 ELSE 0 END),0) AS " & grammar.wrapValue( "delayed" ),
 				[ now ]
 			)
-			.selectRaw( "COALESCE(SUM(CASE WHEN " & claimed & " THEN 1 ELSE 0 END),0) AS reserved" )
+			.selectRaw( "COALESCE(SUM(CASE WHEN " & claimed & " THEN 1 ELSE 0 END),0) AS " & grammar.wrapValue( "reserved" ) )
 			.selectRaw(
-				"COALESCE(SUM(CASE WHEN " & claimed & " AND " & available & " <= ? THEN 1 ELSE 0 END),0) AS staleReservations",
+				"COALESCE(SUM(CASE WHEN " & claimed & " AND " & available & " <= ? THEN 1 ELSE 0 END),0) AS " & grammar.wrapValue( "staleReservations" ),
 				[ now ]
 			)
-			.selectRaw( "MIN(CASE WHEN " & unclaimed & " THEN " & created & " ELSE NULL END) AS oldestCreatedAt" )
+			.selectRaw( "MIN(CASE WHEN " & unclaimed & " THEN " & created & " ELSE NULL END) AS " & grammar.wrapValue( "oldestCreatedAt" ) )
 			.get( options = variables.queryOptions );
 		if ( !isArray( rows ) || rows.len() != 1 ) throw( type = "cbq.Telemetry.InvalidQueueHealthResult" );
 		var snapshot = rows[ 1 ];
