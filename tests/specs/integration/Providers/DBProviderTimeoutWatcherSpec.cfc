@@ -171,7 +171,7 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 			variables.provider.$(
 				method = "newQuery",
 				callback = function() {
-					return injector.getInstance( "QueryBuilder@qb", targetObject = provider );
+					return injector.getInstance( name = "QueryBuilder@qb", targetObject = provider );
 				}
 			);
 		}
