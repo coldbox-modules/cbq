@@ -1,35 +1,38 @@
-# Worker health snapshot adapter
+# Queue health snapshot adapter
 
-`WorkerHealthAdapter@cbq` provides read-only snapshots of a registered cbq worker pool. It does not start workers, poll the queue provider, publish metrics or depend on Sentry. Each call resolves the pool again, so it follows the current registered pool rather than caching a stale instance.
-
-For Sentry automatic collection, select the adapter explicitly:
+`QueueHealthAdapter@cbq` combines supported worker and queue measurements in one read-only snapshot. It does not start workers, reserve jobs, publish metrics or depend on Sentry. Each call resolves the current pool and its provider.
 
 ```cfml
 moduleSettings.sentry.automaticCollectors = {
     enabled: true,
-    queueWorkers: [ {
-        // Fixed metric label; this does not choose a pool.
+    queues: [ {
+        // Fixed logical metric label; independent of provider pool/queue identifiers.
         name: "mail",
-        // Provider-owned snapshot implementation; other queue providers use their own adapters.
-        adapter: "WorkerHealthAdapter@cbq",
-        // Explicit cbq pool selection. No default pool is assumed.
+        // Explicit provider-owned implementation. Other queue systems use their own adapters.
+        adapter: "QueueHealthAdapter@cbq",
+        // Required cbq pool. Its connection chooses the provider; its queue selection chooses the queues.
         options: { pool: "outbound" }
     } ]
 };
 ```
 
-Sentry also needs its existing valid DSN and `enableMetrics:true` settings. No Sentry setting or dependency is needed to use the snapshot directly:
+Sentry also needs its existing valid DSN and `enableMetrics:true`. Its `queues` collector handles worker activity and backlog together; separate worker/database collector definitions are not needed. All measurements use the configured logical queue label. `options.queue` can override the selected queue(s); otherwise the pool's string/array/wildcard queue selection applies.
+
+The adapter follows `sample(context)` structurally without importing Sentry's interface. It can be used directly without Sentry:
 
 ```cfml
-snapshot = wirebox.getInstance( "WorkerHealthAdapter@cbq" )
+snapshot = wirebox.getInstance( "QueueHealthAdapter@cbq" )
     .sample( { options: { pool: "outbound" } } );
-// Or samplePool(workerPool) when the caller already has the pool instance.
 ```
 
-The adapter follows the optional `ISnapshotAdapter.sample(context)` contract structurally; it does not import Sentry's interface. `options.pool` must be supplied explicitly. Missing configuration or an unregistered pool throws an error so the caller can record a failed sample rather than a false zero.
+It returns `configuredWorkers` and supported `activeExecutions`. If the pool's provider exposes `getQueueHealth(queue)`, it also includes supported `depth`, `oldestAgeSeconds`, `runnable`, `delayed`, `reserved`, `staleReservations`, `retries` and `exhausted` fields. Providers own their snapshot logic; cbq's database provider uses its configured table, query options and datasource. Database counts exclude completed/failed jobs; unclaimed work is runnable or delayed, claimed work is reserved, and expired claims are stale. Queue selections are bound query parameters; `*` selects all queues. No database configuration or cbq schema knowledge is required in Sentry.
 
-Snapshots contain `configuredWorkers` from pool quantity and `activeExecutions` only when the executor advertises `features.taskMethods` and reports `activeCount`. Configured concurrency and current executor capacity are not active worker counts. ColdBox versions or executor types without supported activity statistics omit `activeExecutions`; an unstarted executor also leaves it absent. A measured idle executor can report zero. The snapshot does not manufacture a worker heartbeat, retry totals, queue backlog, job identifiers or payload data.
+Missing capabilities stay absent. An unstarted executor does not imply zero activity; supported idle executors can report zero. Queue/database sampling errors propagate to the caller's failure diagnostics, rather than pretending a backlog is zero. There are no fabricated worker heartbeats, job IDs, payloads or raw exceptions in successful snapshots.
 
-Local verification and release requirements are recorded with the companion Sentry change. This adapter must be present in the installed cbq version before configuring its mapping in Sentry; it is not included in older cbq releases.
+`WorkerHealthAdapter@cbq` remains an alias, and `samplePool(workerPool)` remains available for earlier manual worker integrations. The adapter must be present in the installed cbq release before selecting its mapping in Sentry. Neither package acquires a dependency on the other.
 
-Local checks passed on prepared Lucee 5.4.8.2, BoxLang 1.18.0+66 and Adobe 2023 update 25 runtimes (Java 21): 6/6 adapter specs and 134/134 companion Sentry specs per engine, with zero failures/errors/skips. The latter includes ten PostgreSQL 18.1 cases with actual cbq workers, including automatic WireBox resolution of this adapter and idle/busy worker activity. cbq source was `next` base `fad884a` plus this adapter; qb 14.1.0, ColdBox 7.5.2 and TestBox 3.2 were supplied by the isolated Sentry harness. The complete cbq suite was not run locally. This does not qualify crash recovery, actual worker heartbeats, other queue providers or real Sentry delivery/indexing.
+Earlier local verification of the worker-only implementation and the companion Sentry suite is recorded in the PR. The unified queue changes add combined/backlog-only snapshots, provider-owned table/datasource selection, multiple queues and wildcard/parameter binding coverage. Current local and hosted results are recorded on the draft PRs.
+
+Worker measurements always describe the entire pool, even when `options.queue` narrows the backlog selection. Prefer one combined collector per pool; use backlog-only snapshots for extra per-queue breakdowns so shared pool activity is not counted repeatedly.
+
+The unified implementation passed 9/9 adapter specs and 137/137 companion Sentry specs on each prepared Lucee 5, BoxLang and Adobe 2023 runtime, including eleven real PostgreSQL/cbq cases. New MySQL integration specs exercise provider queue snapshots in cbq's hosted suite. Current hosted results and release prerequisites are recorded on the draft PRs. Formatting and whitespace checks pass; installed application modules were not modified.
