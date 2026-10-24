@@ -154,14 +154,20 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 				return [];
 			}
 		);
+		var originalNewQuery = variables.provider.newQuery;
 		prepareMock( variables.provider ).$( "newQuery", builder );
-		variables.provider.fetchPotentiallyOpenRecords( capacity = 10, pool = variables.pool );
+		try {
+			variables.provider.fetchPotentiallyOpenRecords( capacity = 10, pool = variables.pool );
 
-		var sql = builder.toSQL();
-		expect( sql ).toInclude( "CASE WHEN #arguments.quotedColumn# = ? THEN 1 ELSE 2 END ASC" );
-		expect( sql ).notToInclude( variables.pool.getUniqueId() );
-		var bindings = builder.getBindings().map( ( binding ) => isStruct( binding ) ? binding.value : binding );
-		expect( bindings ).toInclude( variables.pool.getUniqueId() );
+			var sql = builder.toSQL();
+			expect( sql ).toInclude( "CASE WHEN #arguments.quotedColumn# = ? THEN 1 ELSE 2 END ASC" );
+			expect( sql ).notToInclude( variables.pool.getUniqueId() );
+			var bindings = builder.getBindings().map( ( binding ) => isStruct( binding ) ? binding.value : binding );
+			expect( bindings ).toInclude( variables.pool.getUniqueId() );
+		} finally {
+			// Cleanup must use a fresh real builder, not this dialect-only ordered pretend query.
+			variables.provider.$( method = "newQuery", callback = originalNewQuery );
+		}
 	}
 
 	private any function makeWorkerPool( required any provider ) {
