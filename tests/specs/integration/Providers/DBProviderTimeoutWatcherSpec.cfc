@@ -154,7 +154,8 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 				return [];
 			}
 		);
-		var originalNewQuery = variables.provider.newQuery;
+		var injector = getWireBox();
+		var provider = variables.provider;
 		prepareMock( variables.provider ).$( "newQuery", builder );
 		try {
 			variables.provider.fetchPotentiallyOpenRecords( capacity = 10, pool = variables.pool );
@@ -166,7 +167,13 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 			expect( bindings ).toInclude( variables.pool.getUniqueId() );
 		} finally {
 			// Cleanup must use a fresh real builder, not this dialect-only ordered pretend query.
-			variables.provider.$( method = "newQuery", callback = originalNewQuery );
+			// WireBox's provider mixer depends on the called method name, so do not invoke it as a MockBox callback.
+			variables.provider.$(
+				method = "newQuery",
+				callback = function() {
+					return injector.getInstance( "QueryBuilder@qb", targetObject = provider );
+				}
+			);
 		}
 	}
 
