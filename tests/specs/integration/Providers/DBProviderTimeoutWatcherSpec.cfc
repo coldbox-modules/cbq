@@ -154,27 +154,27 @@ component extends="tests.resources.ModuleIntegrationSpec" appMapping="/app" {
 				return [];
 			}
 		);
-		var injector = getWireBox();
-		var provider = variables.provider;
-		prepareMock( variables.provider ).$( "newQuery", builder );
-		try {
-			variables.provider.fetchPotentiallyOpenRecords( capacity = 10, pool = variables.pool );
+		// Keep the compile-only builder off the application provider used by teardown.
+		var compilationProvider = createMock( "cbq.models.Providers.DBProvider" ).setProperties( {} );
+		compilationProvider.$property(
+			"javaInstant",
+			"variables",
+			createObject( "java", "java.time.Instant" )
+		);
+		compilationProvider.$property(
+			"log",
+			"variables",
+			{ canDebug : () => false }
+		);
+		compilationProvider.$( "newQuery", builder );
+		makePublic( compilationProvider, "fetchPotentiallyOpenRecords" );
+		compilationProvider.fetchPotentiallyOpenRecords( capacity = 10, pool = variables.pool );
 
-			var sql = builder.toSQL();
-			expect( sql ).toInclude( "CASE WHEN #arguments.quotedColumn# = ? THEN 1 ELSE 2 END ASC" );
-			expect( sql ).notToInclude( variables.pool.getUniqueId() );
-			var bindings = builder.getBindings().map( ( binding ) => isStruct( binding ) ? binding.value : binding );
-			expect( bindings ).toInclude( variables.pool.getUniqueId() );
-		} finally {
-			// Cleanup must use a fresh real builder, not this dialect-only ordered pretend query.
-			// WireBox's provider mixer depends on the called method name, so do not invoke it as a MockBox callback.
-			variables.provider.$(
-				method = "newQuery",
-				callback = function() {
-					return injector.getInstance( name = "QueryBuilder@qb", targetObject = provider );
-				}
-			);
-		}
+		var sql = builder.toSQL();
+		expect( sql ).toInclude( "CASE WHEN #arguments.quotedColumn# = ? THEN 1 ELSE 2 END ASC" );
+		expect( sql ).notToInclude( variables.pool.getUniqueId() );
+		var bindings = builder.getBindings().map( ( binding ) => isStruct( binding ) ? binding.value : binding );
+		expect( bindings ).toInclude( variables.pool.getUniqueId() );
 	}
 
 	private any function makeWorkerPool( required any provider ) {

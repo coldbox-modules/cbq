@@ -301,3 +301,11 @@ With a larger batch size, each job is still announced separately and becomes its
 The DB provider writes at most 100 rows (500 bindings) per insert. Other providers continue through their ordinary `push` implementation unless they implement `pushMany(entries)`. Entries contain the ordinary `push` arguments: `queueName`, `job`, and optionally `delay` and `attempts`. `DBProvider.pushMany` also bounds direct calls to 100 rows per insert. It uses the configured table, query options and datasource.
 
 The caller owns transaction boundaries. Wrap the dispatch with related database changes when all chunks must commit or roll back together. Without a surrounding transaction, a later event, serialization or insert failure can leave earlier chunks persisted.
+
+## Observational execution hooks
+
+Publishing announces onCBQJobPublished or onCBQJobPublishException after the provider boundary, including bulk dispatch. Added observational hooks isolate observer failures and preserve the original enqueue error. onCBQJobAdded retains its existing contract.
+
+Every attempt announces onCBQJobAttemptScheduled, onCBQJobExecutionStarted, onCBQJobExecutionExited, and onCBQJobAttemptFinished. Data contains job, immutable executionId, and attempt. Finished additionally contains status: ok, released, internal_error, cancelled, or deadline_exceeded. Scheduled precedes dispatch, Started/Exited bracket the actual worker body in try/finally, while Finished can execute on another thread. Consumers must key handles by executionId, restore context in Exited, and finish atomically. A timed-out worker can exit later. Existing completion/error hooks retain their behavior.
+
+Focused coverage: synchronous observer failures, bulk enqueue failures, and a real asynchronous timeout. Comprehensive retry/chain/batch/provider and engine matrices remain separate checks.

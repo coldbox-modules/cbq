@@ -1,3 +1,75 @@
+# v7.0.2
+## 04 Oct 2026 — 09:41:27 UTC
+
+### other
+
++ __\*:__ Merge pull request #40 from coldbox-modules/fix/observe-bulk-tail ([ac7beb7](https://github.com/coldbox-modules/cbq/commit/ac7beb749f07ce3afe4b8fbc438239bca952988d))
++ __\*:__ fix: preserve the provider bulk API for partial chunks
+ ([5a06ee8](https://github.com/coldbox-modules/cbq/commit/5a06ee872012f996e1fbf95e71846eb259e49c96))
++ __\*:__ fix: observe publication results for the final partial bulk chunk
+ ([0efe27e](https://github.com/coldbox-modules/cbq/commit/0efe27ee2d3ae8eb4d6096045c8fe63035fa8fec))
+
+
+# v7.0.1
+## 04 Oct 2026 — 09:22:47 UTC
+
+### other
+
++ __\*:__ feat: Add observability hooks ([ff37570](https://github.com/coldbox-modules/cbq/commit/ff375702336f8a36b9ac3d94120b89f1bb6b880c))
++ __\*:__ Merge branch 'main' into feat/observability-hooks ([084b82a](https://github.com/coldbox-modules/cbq/commit/084b82aac3f9cf903c6b5382e417c9e111cab2e6))
++ __\*:__ Fix cross-engine observation assertions and isolate SQL compilation mocks
+ ([89fb36a](https://github.com/coldbox-modules/cbq/commit/89fb36a3996bdce8c351dca7dbb2bf70bfe83d6d))
++ __\*:__ Pin stable formatter and check formatting without automated commits
+ ([c47db61](https://github.com/coldbox-modules/cbq/commit/c47db613e467056c0f982e56827cdf5936515881))
++ __\*:__ Apply cfformat changes
+ ([a96190c](https://github.com/coldbox-modules/cbq/commit/a96190ca352b41bf91dcb1684a8b96dac74d6ef0))
++ __\*:__ Report observer and recovery failures without altering queue outcomes
+ ([3498239](https://github.com/coldbox-modules/cbq/commit/34982390cd613435e02ad2b28d14a3cc10eec19a))
++ __\*:__ Apply cfformat changes
+ ([a04aca1](https://github.com/coldbox-modules/cbq/commit/a04aca1ae33397f91956d21df6767afce43834a5))
++ __\*:__ Apply cfformat changes
+ ([ea0eb14](https://github.com/coldbox-modules/cbq/commit/ea0eb148c2e8e1e8ba6ec9d56ac56c4984e31958))
++ __\*:__ Apply cfformat changes
+ ([f59a643](https://github.com/coldbox-modules/cbq/commit/f59a643d2391d7ff7ec4ae64461adf1fb76e6b18))
++ __\*:__ Apply cfformat changes
+ ([492fcb4](https://github.com/coldbox-modules/cbq/commit/492fcb44b12b167eec66f6f388ca974834f4b56f))
++ __\*:__ Apply cfformat changes
+ ([375a3d0](https://github.com/coldbox-modules/cbq/commit/375a3d05514da810052d3ffd0107c595ffd9bd17))
++ __\*:__ Apply cfformat changes
+ ([6cb30ca](https://github.com/coldbox-modules/cbq/commit/6cb30caafd31186dcde785aba5d28e8b1fdce96f))
++ __\*:__ Apply cfformat changes
+ ([b9e1adc](https://github.com/coldbox-modules/cbq/commit/b9e1adc197fe3716054dc6e46abf0eeb89dc44c3))
++ __\*:__ feat: expose observational publish and worker attempt boundaries
+ ([ca5fcdc](https://github.com/coldbox-modules/cbq/commit/ca5fcdc478d3f9403ff445a6b13f65c406797a1e))
+
+
+# v7.0.0
+## 09 Sep 2026 — 03:19:55 UTC
+
+### BREAKING
+
++ __batches:__ count each terminal job result once ([7db843d](https://github.com/coldbox-modules/cbq/commit/7db843d3d6fba142b214ec8171b2de0d69c758f5))
+
+### feat
+
++ __db:__ configure native polling interval per connection ([d877cc7](https://github.com/coldbox-modules/cbq/commit/d877cc72f6166ce5d16704e1e360801ebb974dfe))
+
+### fix
+
++ __workers:__ preserve jobs with unknown mappings ([84ffcc7](https://github.com/coldbox-modules/cbq/commit/84ffcc7880715fe70f43a7769518945c4a3852f9))
+
+### other
+
++ __\*:__ Merge pull request #38 from coldbox-modules/next ([95b54b2](https://github.com/coldbox-modules/cbq/commit/95b54b25be84028813747d791ca3f45a5d1aefc5))
++ __\*:__ docs: explain database and batch runtime requirements ([fad884a](https://github.com/coldbox-modules/cbq/commit/fad884a6398f4341bdc3c91e8b473337b6420536))
++ __\*:__ feat: Add opt-in batched database enqueueing ([16447da](https://github.com/coldbox-modules/cbq/commit/16447da876f4aaa05569b425b7dd1b039d277c66))
++ __\*:__ perf: Bind DB queue names and job payloads as text ([628a6e3](https://github.com/coldbox-modules/cbq/commit/628a6e34b5fc76785d2645eac8011b20fd31274c))
++ __\*:__ fix: Widen persisted job execution counts for long-lived retries ([b58669a](https://github.com/coldbox-modules/cbq/commit/b58669acec495d74b5145d6e0a58da72c9adda4f))
++ __\*:__ fix: Fence DB callbacks to their execution attempt ([fa380f7](https://github.com/coldbox-modules/cbq/commit/fa380f7035d749b87983fc0980ba5e41958cbd80))
++ __\*:__ ci: run pull request checks targeting next
+ ([954b41e](https://github.com/coldbox-modules/cbq/commit/954b41e279a0a44c08416c80f19807d1145a6698))
+
+
 # v6.0.2
 ## 09 Sep 2026 — 01:23:06 UTC
 
