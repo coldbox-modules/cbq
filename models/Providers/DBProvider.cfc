@@ -697,6 +697,19 @@ component accessors="true" extends="AbstractQueueProvider" {
 		return records;
 	}
 
+	/** Read the configured database queue without reserving jobs or starting workers. */
+	public struct function getQueueHealth( required any queue ) {
+		var queryFactory = function() {
+			return newQuery();
+		};
+		var snapshotAdapter = new cbq.models.Telemetry.DatabaseQueueSnapshot(
+			queryFactory = queryFactory,
+			table = variables.tableName,
+			queryOptions = variables.defaultQueryOptions
+		);
+		return snapshotAdapter.snapshot( arguments.queue );
+	}
+
 	public QueryBuilder function newQuery() provider="QueryBuilder@qb" {
 	}
 
