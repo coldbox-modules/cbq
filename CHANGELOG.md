@@ -1,3 +1,11 @@
+# v7.1.0
+## 25 Oct 2026 — 19:49:37 UTC
+
+### feat
+
++ __telemetry:__ add queue health snapshots ([6812c15](https://github.com/coldbox-modules/cbq/commit/6812c150fe5527b3adadf43d70f9a2fe4e6bc52e))
+
+
 # v7.0.2
 ## 04 Oct 2026 — 09:41:27 UTC
 
