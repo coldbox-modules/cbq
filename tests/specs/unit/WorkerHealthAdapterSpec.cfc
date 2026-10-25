@@ -2,16 +2,22 @@ component extends="testbox.system.BaseSpec" {
 
 	function run() {
 		describe( "worker health snapshot adapter", function() {
-			it( "requires an explicit pool and never treats the metric name as a default", function() {
+			it( "requires an explicit worker pool and never treats the metric name as a default", function() {
 				var adapter = new cbq.models.Telemetry.WorkerHealthAdapter();
-				for ( var options in [ {}, { pool : "" }, { pool : [] } ] ) {
+				for (
+					var options in [
+						{},
+						{ workerPool : "" },
+						{ workerPool : [] }
+					]
+				) {
 					expect( function() {
 						adapter.sample( { name : "default", options : options } );
-					} ).toThrow( "cbq.Telemetry.MissingWorkerPool" );
+					} ).toThrow( "cbq.Telemetry.InvalidQueueHealthSelection" );
 				}
 				expect( function() {
 					adapter.sample( { name : "default" } );
-				} ).toThrow( "cbq.Telemetry.MissingWorkerPool" );
+				} ).toThrow( "cbq.Telemetry.InvalidQueueHealthSelection" );
 			} );
 			it( "resolves the configured pool freshly for every snapshot without exposing options", function() {
 				var calls = 0;
@@ -34,7 +40,7 @@ component extends="testbox.system.BaseSpec" {
 				var context = {
 					name : "mail",
 					options : {
-						pool : "outbound",
+						workerPool : "outbound",
 						secret : "PRIVATE"
 					}
 				};
@@ -114,7 +120,7 @@ component extends="testbox.system.BaseSpec" {
 					}
 				);
 				expect( function() {
-					adapter.sample( { options : { pool : "missing" } } );
+					adapter.sample( { options : { workerPool : "missing" } } );
 				} ).toThrow( "cbq.MissingWorkerPool" );
 			} );
 			it( "reads supported activity from an actual ColdBox executor", function() {

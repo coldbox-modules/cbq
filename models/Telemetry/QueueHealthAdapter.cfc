@@ -4,24 +4,43 @@ component {
 	property name="config" inject="Config@cbq";
 
 	struct function sample( required struct context ) {
-		if (
-			!arguments.context.keyExists( "options" ) || !isStruct( arguments.context.options ) ||
-			!arguments.context.options.keyExists( "pool" ) || isNull( arguments.context.options.pool ) || !isSimpleValue(
-				arguments.context.options.pool
-			) ||
-			!len( trim( arguments.context.options.pool ) )
-		) {
+		if ( !arguments.context.keyExists( "options" ) || !isStruct( arguments.context.options ) ) {
 			throw(
-				type = "cbq.Telemetry.MissingWorkerPool",
-				message = "Configure options.pool explicitly for the worker health adapter."
+				type = "cbq.Telemetry.InvalidQueueHealthSelection",
+				message = "Configure exactly one of options.workerPool or options.connection."
 			);
 		}
-		var pool = variables.config.getWorkerPool( arguments.context.options.pool );
-		var snapshot = samplePool( pool );
-		if ( !structKeyExists( pool, "getConnection" ) ) return snapshot;
-		var provider = pool.getConnection().getProvider();
+		var options = arguments.context.options;
+		var hasWorkerPool = options.keyExists( "workerPool" );
+		var hasConnection = options.keyExists( "connection" );
+		if ( options.keyExists( "pool" ) || hasWorkerPool == hasConnection ) {
+			throw(
+				type = "cbq.Telemetry.InvalidQueueHealthSelection",
+				message = "Configure exactly one of options.workerPool or options.connection; options.pool is not supported."
+			);
+		}
+		var source = hasWorkerPool ? options.workerPool : options.connection;
+		if ( isNull( source ) || !isSimpleValue( source ) || !len( trim( source ) ) ) {
+			throw(
+				type = "cbq.Telemetry.InvalidQueueHealthSelection",
+				message = "The workerPool or connection selector must be a nonempty name."
+			);
+		}
+		var snapshot = {};
+		var connection = {};
+		if ( hasWorkerPool ) {
+			var pool = variables.config.getWorkerPool( source );
+			snapshot = samplePool( pool );
+			if ( !structKeyExists( pool, "getConnection" ) ) return snapshot;
+			connection = pool.getConnection();
+		} else {
+			connection = variables.config.getConnection( source );
+		}
+		var provider = connection.getProvider();
 		if ( !structKeyExists( provider, "getQueueHealth" ) ) return snapshot;
-		var queueSelection = arguments.context.options.keyExists( "queue" ) ? arguments.context.options.queue : pool.getQueue();
+		var queueSelection = options.keyExists( "queue" ) ? options.queue : (
+			hasWorkerPool ? pool.getQueue() : connection.getDefaultQueue()
+		);
 		var observed = provider.getQueueHealth( queueSelection );
 		if ( !isStruct( observed ) ) throw( type = "cbq.Telemetry.InvalidQueueHealthResult" );
 		for (
