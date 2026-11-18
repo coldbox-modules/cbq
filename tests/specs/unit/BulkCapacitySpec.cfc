@@ -37,44 +37,44 @@ component extends="testbox.system.BaseSpec" {
 			it( "rejects larger batches for SQL Server, SQLite, and unrecognized grammars before hooks or writes", function() {
 				for (
 					var grammar in [
-						new qb.models.Grammars.SQLServerGrammar(),
+						new qb.models.Grammars.SqlServerGrammar(),
 						new qb.models.Grammars.SQLiteGrammar(),
 						new qb.models.Grammars.BaseGrammar()
 					]
 				) {
 					var provider = createMock( "cbq.models.Providers.DBProvider" ).setProperties( { "bulkInsertBatchSize" : 1000 } );
 					provider.$( "newQuery", new qb.models.Query.QueryBuilder( grammar = grammar ) );
-					var calls = [];
+					var trace = { "calls" : [] };
 					var connection = new cbq.models.Connections.QueueConnection().setProvider( provider );
-					var dispatcher = dispatcherFor( connection, calls );
+					var dispatcher = dispatcherFor( connection, trace );
 					expect( function() {
 						dispatcher.bulkDispatch( jobs = jobs( 1 ), batchSize = 1000 );
 					} ).toThrow( "cbq.DBProvider.UnsupportedBulkInsertBatchSize" );
-					expect( calls ).toBeEmpty();
+					expect( trace.calls ).toBeEmpty();
 				}
 			} );
 			it( "validates declared capacity before calling any hooks on custom providers", function() {
 				for ( var cap in [ 100, 0, 1001, 2.5 ] ) {
-					var calls = [];
+					var trace = { "calls" : [] };
 					var provider = {
 						"getMaxBulkDispatchBatchSize" : function() {
 							return cap;
 						},
 						"pushMany" : function() {
-							calls.append( "write" );
+							trace.calls.append( "write" );
 						}
 					};
 					var connection = new cbq.models.Connections.QueueConnection().setProvider( provider );
-					var dispatcher = dispatcherFor( connection, calls );
+					var dispatcher = dispatcherFor( connection, trace );
 					expect( function() {
 						dispatcher.bulkDispatch( jobs = jobs( 1 ), batchSize = 1000 );
 					} ).toThrow( "cbq.InvalidDispatchBatchSize" );
-					expect( calls ).toBeEmpty();
+					expect( trace.calls ).toBeEmpty();
 				}
 			} );
 			it( "preserves every native hook and ordinal over 1001 and 2005 jobs", function() {
 				for ( var total in [ 1001, 2005 ] ) {
-					var calls = [];
+					var trace = { "calls" : [] };
 					var batches = [];
 					var provider = {
 						"getMaxBulkDispatchBatchSize" : function() {
@@ -82,11 +82,11 @@ component extends="testbox.system.BaseSpec" {
 						},
 						"pushMany" : function( entries ) {
 							batches.append( entries );
-							calls.append( "write:" & entries.len() );
+							trace.calls.append( "write:" & entries.len() );
 						}
 					};
 					var connection = new cbq.models.Connections.QueueConnection().setProvider( provider );
-					dispatcherFor( connection, calls ).bulkDispatch( jobs = jobs( total ), batchSize = 1000 );
+					dispatcherFor( connection, trace ).bulkDispatch( jobs = jobs( total ), batchSize = 1000 );
 					expect( batches.map( ( entries ) => entries.len() ) ).toBe(
 						total == 1001 ? [ 1000, 1 ] : [ 1000, 1000, 5 ]
 					);
@@ -98,19 +98,19 @@ component extends="testbox.system.BaseSpec" {
 							expect( entry.job.getProperties().ordinal ).toBe( ordinal );
 							expect( entry.job.getCurrentAttempt() ).toBe( 0 );
 							expect( entry.attempts ).toBe( 0 );
-							expect( calls[ ++cursor ] ).toBe( "onCBQJobAdded:" & ordinal );
+							expect( trace.calls[ ++cursor ] ).toBe( "onCBQJobAdded:" & ordinal );
 						}
-						expect( calls[ ++cursor ] ).toBe( "write:" & batch.len() );
+						expect( trace.calls[ ++cursor ] ).toBe( "write:" & batch.len() );
 						for ( var entry in batch ) {
-							expect( calls[ ++cursor ] ).toBe( "onCBQJobPublished:" & entry.job.getProperties().ordinal );
+							expect( trace.calls[ ++cursor ] ).toBe( "onCBQJobPublished:" & entry.job.getProperties().ordinal );
 						}
 					}
 					expect( ordinal ).toBe( total );
-					expect( cursor ).toBe( calls.len() );
+					expect( cursor ).toBe( trace.calls.len() );
 				}
 			} );
 			it( "announces failure for the failed chunk without publishing its tail", function() {
-				var calls = [];
+				var trace = { "calls" : [] };
 				var writes = 0;
 				var provider = {
 					"getMaxBulkDispatchBatchSize" : function() {
@@ -123,20 +123,22 @@ component extends="testbox.system.BaseSpec" {
 					}
 				};
 				var connection = new cbq.models.Connections.QueueConnection().setProvider( provider );
-				var dispatcher = dispatcherFor( connection, calls );
+				var dispatcher = dispatcherFor( connection, trace );
 				expect( function() {
 					dispatcher.bulkDispatch( jobs = jobs( 2005 ), batchSize = 1000 );
 				} ).toThrow( "FixtureWriteFailure" );
-				expect( calls.filter( ( value ) => value.left( 14 ) == "onCBQJobAdded:" ).len() ).toBe( 2000 );
-				expect( calls.filter( ( value ) => value.find( "onCBQJobPublished:" ) == 1 ).len() ).toBe( 1000 );
-				expect( calls.filter( ( value ) => value.find( "onCBQJobPublishException:" ) == 1 ).len() ).toBe( 1000 );
+				expect( trace.calls.filter( ( value ) => value.left( 14 ) == "onCBQJobAdded:" ).len() ).toBe( 2000 );
+				expect( trace.calls.filter( ( value ) => value.find( "onCBQJobPublished:" ) == 1 ).len() ).toBe( 1000 );
+				expect( trace.calls.filter( ( value ) => value.find( "onCBQJobPublishException:" ) == 1 ).len() ).toBe(
+					1000
+				);
 			} );
 		} );
 	}
 
-	private any function dispatcherFor( required any connection, required array calls ) {
+	private any function dispatcherFor( required any connection, required struct trace ) {
 		var capturedConnection = arguments.connection;
-		var capturedCalls = arguments.calls;
+		var capturedTrace = arguments.trace;
 		return new cbq.models.Jobs.Dispatcher()
 			.setConfig( {
 				"getDefaultConnectionName" : function() {
@@ -148,7 +150,7 @@ component extends="testbox.system.BaseSpec" {
 			} )
 			.setInterceptorService( {
 				"announce" : function( state, data ) {
-					capturedCalls.append( state & ":" & data.job.getProperties().ordinal );
+					capturedTrace.calls.append( state & ":" & data.job.getProperties().ordinal );
 				}
 			} );
 	}
