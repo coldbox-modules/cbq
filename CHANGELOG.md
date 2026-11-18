@@ -1,3 +1,15 @@
+# v7.2.0
+## 18 Nov 2026 — 16:03:05 UTC
+
+### feat
+
++ __queue:__ support larger PostgreSQL dispatch batches ([4e73f1f](https://github.com/coldbox-modules/cbq/commit/4e73f1fdafa0b86c38ea09fdddfc60bf7bbbd68b))
+
+### test
+
++ __queue:__ make bulk capacity contracts portable across engines ([899e0f1](https://github.com/coldbox-modules/cbq/commit/899e0f15db8385ad03388ee34ccf0b57bed2e91a))
+
+
 # v7.1.0
 ## 25 Oct 2026 — 19:49:37 UTC
 
