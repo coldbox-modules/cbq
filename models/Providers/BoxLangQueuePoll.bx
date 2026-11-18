@@ -1,0 +1,24 @@
+/** Give each BoxLang poll its own request while retaining its application's queue configuration. */
+class {
+
+	function wrap( required function poll ) {
+		var settings = getApplicationMetadata();
+		var applicationName = settings.name;
+		var pollSettings = {};
+		for ( var key in [ "mappings", "datasource", "defaultDatasource", "datasources", "javaSettings" ] ) {
+			if ( settings.keyExists( key ) ) {
+				pollSettings[ key ] = duplicate( settings[ key ] );
+			}
+		}
+
+		return () => runThreadInContext(
+			applicationName = applicationName,
+			callback = () => {
+				bx:application action="update" attributeCollection="#duplicate( pollSettings )#";
+				application.cbController.getModuleService().loadMappings();
+				return poll();
+			}
+		);
+	}
+
+}

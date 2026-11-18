@@ -99,39 +99,10 @@ component accessors="true" extends="AbstractQueueProvider" {
 	private any function registerWorkerTask( required WorkerPool pool ) {
 		variables.log.debug( "Registering DB Task for Worker Pool [#arguments.pool.getUniqueId()#]" );
 
-		// var forceRun = false;
 		var task = variables.schedulerService.getSchedulers()[ "cbScheduler@cbq" ]
 			.task( "cbq:db-watcher:#arguments.pool.getUniqueId()#" )
-			.call( () => {
-				var capacity = pool.getCurrentExecutorCount() - pool.getExecutor().getActiveCount();
-				// var capacity = pool.getCurrentExecutorCount() - pool.getExecutor().getActiveCount() + ( forceRun ? 1 : 0 );
-				// if ( forceRun ) {
-				// 	forceRun = false;
-				// }
-
-				transaction {
-					var potentiallyOpenRecords = fetchPotentiallyOpenRecords( capacity, pool );
-					if ( potentiallyOpenRecords.isEmpty() ) {
-						return potentiallyOpenRecords.len();
-					}
-					tryToLockRecords( potentiallyOpenRecords, pool );
-				}
-
-				var lockedRecords = fetchLockedRecords( capacity, pool );
-
-				for ( var job in lockedRecords ) {
-					processLockedRecord( job, pool );
-				}
-
-				return lockedRecords.len();
-			} )
+			.call( createPollCallback( arguments.pool ) )
 			.spacedDelay( variables.pollIntervalMilliseconds, "milliseconds" )
-			.before( function() {
-				application.cbController.getModuleService().loadMappings();
-				if ( variables.log.canDebug() ) {
-					variables.log.debug( "Starting to fetch jobs from the db for Worker Pool [#pool.getUniqueId()#]" );
-				}
-			} )
 			.onSuccess( function( task, jobCount ) {
 				if ( variables.log.canDebug() ) {
 					variables.log.debug( "Finished fetching jobs from the db for Worker Pool [#pool.getUniqueId()#].  Total jobs retrieved: #jobCount.orElse( 0 )#" );
@@ -169,6 +140,43 @@ component accessors="true" extends="AbstractQueueProvider" {
 			} );
 
 		variables.log.debug( "Starting DB Task for Worker Pool [#arguments.pool.getUniqueId()#]" );
+	}
+
+	private function function createPollCallback( required WorkerPool pool ) {
+		if ( structKeyExists( server, "boxlang" ) ) {
+			return new cbq.models.Providers.BoxLangQueuePoll().wrap( () => pollWorkerPool( pool ) );
+		}
+
+		// ColdBox supplies the application context on Lucee and Adobe. Only
+		// the mapping update writes shared settings across these callbacks.
+		var mappingLock = "cbq-db-poll-mappings-" & hash( getApplicationMetadata().name );
+		return function() {
+			lock name=mappingLock type="exclusive" timeout="30" {
+				application.cbController.getModuleService().loadMappings();
+			}
+			return pollWorkerPool( pool );
+		};
+	}
+
+	private numeric function pollWorkerPool( required WorkerPool pool ) {
+		if ( variables.log.canDebug() ) {
+			variables.log.debug( "Starting to fetch jobs from the db for Worker Pool [#pool.getUniqueId()#]" );
+		}
+
+		var capacity = pool.getCurrentExecutorCount() - pool.getExecutor().getActiveCount();
+		transaction {
+			var potentiallyOpenRecords = fetchPotentiallyOpenRecords( capacity, pool );
+			if ( potentiallyOpenRecords.isEmpty() ) {
+				return 0;
+			}
+			tryToLockRecords( potentiallyOpenRecords, pool );
+		}
+
+		var lockedRecords = fetchLockedRecords( capacity, pool );
+		for ( var job in lockedRecords ) {
+			processLockedRecord( job, pool );
+		}
+		return lockedRecords.len();
 	}
 
 	private any function registerCleanupTask( required WorkerPool pool ) {
@@ -630,7 +638,6 @@ component accessors="true" extends="AbstractQueueProvider" {
 			"attempt" : arguments.record.attempts + 1,
 			"awaitingExecution" : false
 		} );
-		application.cbController.getModuleService().loadMappings();
 		variables.marshalJob(
 			job = jobCFC,
 			pool = arguments.pool,
