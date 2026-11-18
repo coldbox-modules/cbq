@@ -16,6 +16,8 @@ component {
     }
     this.mappings[ "/testingModuleRoot" ] = testingModuleRootMapping;
     this.mappings[ "/cbq" ] = rootPath;
+    this.mappings[ "/qb" ] = rootPath & "modules/qb";
+    this.mappings[ "/cbpaginator" ] = rootPath & "modules/qb/modules/cbpaginator";
     this.mappings[ "/app" ] = testsPath & "resources/app";
     this.mappings[ "/coldbox" ] = testsPath & "resources/app/coldbox";
     this.mappings[ "/testbox" ] = rootPath & "/testbox";
