@@ -1,3 +1,16 @@
+# v7.2.1
+## 18 Nov 2026 — 18:41:26 UTC
+
+### fix
+
++ __db:__ isolate concurrent queue watcher polls
+ ([9a8b967](https://github.com/coldbox-modules/cbq/commit/9a8b9672d4b9ad7d70576b175af248b261ed5bcf))
+
+### other
+
++ __\*:__ Merge pull request #44 from coldbox-modules/fix/concurrent-db-polls ([b018663](https://github.com/coldbox-modules/cbq/commit/b018663387e373ecc36f3c67f181656406fc81ff))
+
+
 # v7.2.0
 ## 18 Nov 2026 — 16:03:05 UTC
 
